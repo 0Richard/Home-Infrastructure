@@ -1,0 +1,21 @@
+# =============================================================================
+# nftables Tasks - Linux
+# =============================================================================
+# Firewall configuration
+# =============================================================================
+
+- name: Deploy nftables configuration
+  copy:
+    src: files/nsa/nftables.conf
+    dest: /etc/nftables.conf
+    owner: root
+    group: root
+    mode: '0644'
+    validate: '/usr/sbin/nft -c -f %s'
+  notify: Reload nftables
+
+- name: Enable nftables
+  systemd:
+    name: nftables
+    enabled: yes
+    state: started

@@ -1,0 +1,53 @@
+#!/bin/bash
+# =============================================================================
+# Pre-commit hook - Prevent unencrypted vault files from being committed
+# =============================================================================
+# This hook runs before each commit and blocks if vault.yml is not encrypted
+# =============================================================================
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+NC='\033[0m'
+
+echo "Running pre-commit vault check..."
+
+# Files that MUST be encrypted
+VAULT_FILES="vault.yml"
+error=0
+
+for file in $VAULT_FILES; do
+    # Check if file is staged for commit
+    if git diff --cached --name-only | grep -q "^$file$"; then
+        # Get the staged content and check first line
+        first_line=$(git show ":$file" 2>/dev/null | head -1)
+
+        if echo "$first_line" | grep -q '^\$ANSIBLE_VAULT'; then
+            echo -e "${GREEN}✓ $file is encrypted${NC}"
+        else
+            echo -e "${RED}✗ ERROR: $file is NOT encrypted!${NC}"
+            echo -e "  Run: ${YELLOW}ansible-vault encrypt $file${NC}"
+            error=1
+        fi
+    fi
+done
+
+# Scan other staged .yml files for potential secrets
+for file in $(git diff --cached --name-only 2>/dev/null | grep '\.yml$' | grep -v '^vault\.yml$'); do
+    if [ -f "$file" ]; then
+        # Check for common secret patterns (not in Jinja2 variables)
+        if git show ":$file" 2>/dev/null | grep -qE '(password|secret|private_key|api_key|token):\s+[a-zA-Z0-9+/=]{8,}'; then
+            echo -e "${YELLOW}⚠ WARNING: $file may contain plaintext secrets${NC}"
+            # Warning only, don't block
+        fi
+    fi
+done
+
+if [ $error -eq 1 ]; then
+    echo ""
+    echo -e "${RED}Commit BLOCKED - encrypt vault files first${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}Pre-commit checks passed${NC}"
+exit 0

@@ -1,0 +1,49 @@
+# =============================================================================
+# Pi-hole Tasks - Docker DNS + Ad Blocking
+# =============================================================================
+# Replaces dnsmasq with Pi-hole for DNS
+# Also provides ad blocking and optional DHCP
+# =============================================================================
+
+- name: Stop and disable dnsmasq (replaced by Pi-hole)
+  systemd:
+    name: dnsmasq
+    state: stopped
+    enabled: no
+  ignore_errors: yes
+
+- name: Create Pi-hole directories
+  file:
+    path: "{{ docker_data_path }}/pihole/{{ item }}"
+    state: directory
+    owner: root
+    group: docker
+    mode: '0775'
+  loop:
+    - etc-pihole
+    - etc-dnsmasq.d
+
+- name: Deploy Pi-hole custom DNS entries
+  copy:
+    src: files/nsa/pihole/custom.list
+    dest: "{{ docker_data_path }}/pihole/etc-pihole/custom.list"
+    owner: root
+    group: docker
+    mode: '0644'
+
+- name: Deploy Pi-hole dnsmasq custom config
+  copy:
+    src: files/nsa/pihole/99-custom.conf
+    dest: "{{ docker_data_path }}/pihole/etc-dnsmasq.d/99-custom.conf"
+    owner: root
+    group: docker
+    mode: '0644'
+
+- name: Reminder about Pi-hole password
+  debug:
+    msg: |
+      Pi-hole will use password from PIHOLE_PASSWORD environment variable.
+      Set it in /srv/docker/.env or change via:
+        docker exec -it pihole pihole -a -p
+      
+      Access Pi-hole admin: http://192.168.1.183:8080/admin

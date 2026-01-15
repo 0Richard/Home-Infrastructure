@@ -1,0 +1,73 @@
+#!/bin/bash
+# =============================================================================
+# Pre-push hook - Final check before pushing to remote
+# =============================================================================
+# Blocks push if vault.yml is unencrypted in any commit being pushed
+# This is a safety net in case pre-commit was bypassed with --no-verify
+# =============================================================================
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+NC='\033[0m'
+
+echo "Running pre-push vault check..."
+
+# Read the remote and URL (passed by git)
+remote="$1"
+url="$2"
+
+error=0
+
+# Check the current HEAD version of vault.yml
+if [ -f "vault.yml" ]; then
+    first_line=$(head -1 vault.yml)
+
+    if echo "$first_line" | grep -q '^\$ANSIBLE_VAULT'; then
+        echo -e "${GREEN}✓ vault.yml is encrypted${NC}"
+    else
+        echo -e "${RED}✗ ERROR: vault.yml is NOT encrypted!${NC}"
+        echo -e "  Run: ${YELLOW}ansible-vault encrypt vault.yml${NC}"
+        error=1
+    fi
+fi
+
+# Check commits being pushed for any unencrypted vault.yml
+while read local_ref local_sha remote_ref remote_sha; do
+    # Skip if deleting a ref
+    if [ "$local_sha" = "0000000000000000000000000000000000000000" ]; then
+        continue
+    fi
+
+    # For new branches, check all commits
+    if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
+        range="$local_sha"
+    else
+        range="$remote_sha..$local_sha"
+    fi
+
+    # Check each commit for vault.yml
+    for commit in $(git rev-list "$range" 2>/dev/null); do
+        # Check if vault.yml exists in this commit
+        if git ls-tree --name-only -r "$commit" 2>/dev/null | grep -q '^vault\.yml$'; then
+            vault_content=$(git show "$commit:vault.yml" 2>/dev/null | head -1)
+
+            if ! echo "$vault_content" | grep -q '^\$ANSIBLE_VAULT'; then
+                echo -e "${RED}✗ ERROR: Commit $commit contains unencrypted vault.yml!${NC}"
+                echo -e "  You need to rewrite git history to remove this."
+                echo -e "  Consider: ${YELLOW}git filter-branch${NC} or ${YELLOW}git rebase -i${NC}"
+                error=1
+            fi
+        fi
+    done
+done
+
+if [ $error -eq 1 ]; then
+    echo ""
+    echo -e "${RED}Push BLOCKED - unencrypted secrets detected${NC}"
+    echo "Fix the issue and try again."
+    exit 1
+fi
+
+echo -e "${GREEN}Pre-push checks passed${NC}"
+exit 0

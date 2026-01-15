@@ -1,0 +1,27 @@
+# =============================================================================
+# Cockpit Tasks - Linux
+# =============================================================================
+# Web-based server management interface
+# Access: https://nsa:9090
+# =============================================================================
+
+- name: Install Cockpit and plugins
+  apt:
+    name:
+      - cockpit
+      - cockpit-storaged        # Storage management
+      - cockpit-networkmanager  # Network config
+      - cockpit-packagekit      # Package updates
+    state: present
+    update_cache: yes
+
+- name: Enable Cockpit socket
+  systemd:
+    name: cockpit.socket
+    enabled: yes
+    state: started
+
+- name: Ensure Cockpit service can start
+  systemd:
+    name: cockpit
+    enabled: yes

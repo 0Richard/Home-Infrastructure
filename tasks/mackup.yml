@@ -1,0 +1,47 @@
+# =============================================================================
+# Mackup Tasks - macOS
+# =============================================================================
+# App settings backup/restore via iCloud
+#
+# NOTE: Mackup handles GUI app settings that Ansible shouldn't manage.
+# This task just ensures Mackup is installed and configured.
+# Run `mackup backup` or `mackup restore` manually.
+# =============================================================================
+
+- name: Ensure Mackup is installed
+  homebrew:
+    name: mackup
+    state: present
+  become: no
+
+- name: Check if .mackup.cfg exists
+  stat:
+    path: "{{ ansible_env.HOME }}/.mackup.cfg"
+  register: mackup_cfg
+
+- name: Create default .mackup.cfg if missing
+  copy:
+    dest: "{{ ansible_env.HOME }}/.mackup.cfg"
+    content: |
+      [storage]
+      engine = icloud
+      
+      [applications_to_ignore]
+      # Add apps you don't want synced
+    mode: '0644'
+  when: not mackup_cfg.stat.exists
+
+- name: Deploy app-backup script
+  copy:
+    src: files/macos/app-backup.sh
+    dest: "{{ ansible_env.HOME }}/.local/bin/app-backup"
+    mode: '0755'
+
+- name: Show Mackup reminder
+  debug:
+    msg: |
+      Mackup is installed. Manual commands:
+        mackup backup   - Push settings to iCloud
+        mackup restore  - Pull settings from iCloud
+        mackup list     - Show supported apps
+        app-backup      - List installed apps to iCloud

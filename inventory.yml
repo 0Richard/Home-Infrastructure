@@ -1,0 +1,44 @@
+# =============================================================================
+# Infrastructure Inventory
+# =============================================================================
+# All machines managed by this repository
+# =============================================================================
+
+all:
+  children:
+    # -------------------------------------------------------------------------
+    # Linux Servers
+    # -------------------------------------------------------------------------
+    linux_servers:
+      hosts:
+        nsa:
+          ansible_host: 192.168.1.183
+          ansible_user: root
+
+    # -------------------------------------------------------------------------
+    # macOS Machines
+    # -------------------------------------------------------------------------
+    macos:
+      hosts:
+        mini:
+          ansible_host: 192.168.1.116
+          ansible_user: richardbell
+        mb4:
+          ansible_host: localhost
+          ansible_connection: local
+          ansible_user: richardbell
+
+  # ---------------------------------------------------------------------------
+  # Global Variables
+  # ---------------------------------------------------------------------------
+  vars:
+    # Identity
+    username: richardbell
+    
+    # Paths (cross-platform)
+    sync_folder: "~/Sync"
+    local_bin: "~/.local/bin"
+    shell_config_dir: "~/.config/shell"
+    
+    # Timezone
+    timezone: Europe/London

@@ -1,0 +1,125 @@
+# =============================================================================
+# Docker Tasks - Linux
+# =============================================================================
+# Install Docker, deploy compose file, start services
+# =============================================================================
+
+- name: Install Docker prerequisites
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+    state: present
+    update_cache: yes
+
+- name: Create directory for Docker GPG key
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Download Docker GPG key
+  get_url:
+    url: https://download.docker.com/linux/debian/gpg
+    dest: /etc/apt/keyrings/docker.asc
+    mode: '0644'
+
+- name: Add Docker apt repository
+  apt_repository:
+    repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian {{ ansible_facts['distribution_release'] }} stable"
+    state: present
+    filename: docker
+    update_cache: yes
+
+- name: Install Docker Engine
+  apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    state: present
+
+- name: Add richard to docker group
+  user:
+    name: richardbell
+    groups: docker
+    append: yes
+
+- name: Enable Docker service
+  systemd:
+    name: docker
+    enabled: yes
+    state: started
+
+- name: Create Docker data directories
+  file:
+    path: "{{ docker_data_path }}/{{ item }}"
+    state: directory
+    owner: root
+    group: docker
+    mode: '0775'
+  loop: "{{ docker_services }}"
+
+- name: Create nginx subdirectories
+  file:
+    path: "{{ docker_data_path }}/nginx/{{ item }}"
+    state: directory
+    owner: root
+    group: docker
+    mode: '0775'
+  loop:
+    - sites/laya
+    - sites/hopo
+    - sites/etc
+
+- name: Create mosquitto subdirectories
+  file:
+    path: "{{ docker_data_path }}/mosquitto/{{ item }}"
+    state: directory
+    owner: root
+    group: docker
+    mode: '0775'
+  loop:
+    - config
+    - data
+    - log
+
+- name: Deploy docker-compose.yml
+  copy:
+    src: files/nsa/docker-compose.yml
+    dest: "{{ docker_data_path }}/docker-compose.yml"
+    owner: root
+    group: docker
+    mode: '0644'
+  notify: Restart docker containers
+
+- name: Deploy nginx.conf
+  copy:
+    src: files/nsa/nginx.conf
+    dest: "{{ docker_data_path }}/nginx/nginx.conf"
+    owner: root
+    group: docker
+    mode: '0644'
+  notify: Restart docker containers
+
+- name: Deploy mosquitto.conf
+  copy:
+    src: files/nsa/mosquitto.conf
+    dest: "{{ docker_data_path }}/mosquitto/config/mosquitto.conf"
+    owner: root
+    group: docker
+    mode: '0644'
+  notify: Restart docker containers
+
+- name: Deploy Docker .env file (secrets)
+  template:
+    src: templates/nsa/docker.env.j2
+    dest: "{{ docker_data_path }}/.env"
+    owner: root
+    group: docker
+    mode: '0600'

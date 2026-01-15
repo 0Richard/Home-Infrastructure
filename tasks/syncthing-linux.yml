@@ -1,0 +1,24 @@
+# =============================================================================
+# Syncthing Tasks - Linux
+# =============================================================================
+# File synchronization service
+# =============================================================================
+
+- name: Install Syncthing
+  apt:
+    name: syncthing
+    state: present
+
+- name: Ensure Syncthing config directory exists
+  file:
+    path: /home/richardbell/.config/syncthing
+    state: directory
+    owner: richardbell
+    group: richardbell
+    mode: '0700'
+
+- name: Enable Syncthing for richard
+  systemd:
+    name: syncthing@richardbell
+    enabled: yes
+    state: started

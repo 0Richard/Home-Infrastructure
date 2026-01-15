@@ -1,0 +1,25 @@
+# =============================================================================
+# macOS - Group Variables
+# =============================================================================
+
+# Admin group for sudo access
+admin_group: wheel
+
+# Package manager
+package_manager: homebrew
+
+# Homebrew prefix (arm64 Macs use /opt/homebrew)
+homebrew_prefix: /opt/homebrew
+
+# Common Homebrew packages (both Macs)
+homebrew_common_packages:
+  - syncthing
+  - wireguard-tools
+  - mackup
+  - gh
+  - tree
+  - pandoc
+
+# Common casks
+homebrew_common_casks:
+  - obsidian

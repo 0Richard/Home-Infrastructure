@@ -1,0 +1,15 @@
+# =============================================================================
+# Linux Servers - Group Variables
+# =============================================================================
+
+# Admin group for sudo access
+admin_group: sudo
+
+# Package manager
+package_manager: apt
+
+# Service manager
+service_manager: systemd
+
+# Paths
+homebrew_prefix: ""  # Not applicable

@@ -1,0 +1,51 @@
+# =============================================================================
+# Backup Tasks - Docker Data Backup
+# =============================================================================
+# Sets up automated backup of Docker container data
+# =============================================================================
+
+- name: Create local backup directory
+  file:
+    path: /mnt/data/backups
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Create Syncthing backup directory
+  file:
+    path: /home/richardbell/Sync/backups/nsa
+    state: directory
+    owner: richardbell
+    group: richardbell
+    mode: '0755'
+
+- name: Deploy docker-backup script
+  copy:
+    src: files/scripts/docker-backup
+    dest: /usr/local/bin/docker-backup
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Setup weekly backup cron job (Sunday 3am)
+  cron:
+    name: "Docker backup"
+    minute: "0"
+    hour: "3"
+    weekday: "0"
+    job: "/usr/local/bin/docker-backup >> /var/log/docker-backup.log 2>&1"
+    user: root
+
+- name: Reminder about backups
+  debug:
+    msg: |
+      Backup configured:
+        - Runs: Weekly, Sunday 3am
+        - Local: /mnt/data/backups/ (keeps 7 days)
+        - Synced: ~/Sync/backups/nsa/ (via Syncthing to Macs)
+        - Log: /var/log/docker-backup.log
+      
+      Manual backup: sudo docker-backup
+      
+      Note: Requires 1TB SATA SSD mounted at /mnt/data

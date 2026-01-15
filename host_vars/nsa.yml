@@ -1,0 +1,35 @@
+# =============================================================================
+# nsa - Host Variables
+# =============================================================================
+
+# Network
+server_ip: 192.168.1.183
+server_ipv6: fd7a:94b4:f195:7248:83bf:d01b:f427:66da
+ipv6_prefix: fd7a:94b4:f195:7248::/64
+lan_interface: enp1s0
+
+# WireGuard
+wireguard_address: 10.0.0.1/24
+wireguard_port: 51820
+
+# Docker
+docker_data_path: /srv/docker
+docker_services:
+  - homeassistant
+  - nginx
+  - mosquitto
+  - pihole
+  - plex
+
+# DNS hostnames (configured in Pi-hole custom.list)
+dns_local_hosts:
+  - { name: ha, ip: "{{ server_ip }}" }
+  - { name: laya, ip: "{{ server_ip }}" }
+  - { name: hopo, ip: "{{ server_ip }}" }
+  - { name: etc, ip: "{{ server_ip }}" }
+  - { name: pihole, ip: "{{ server_ip }}" }
+  - { name: plex, ip: "{{ server_ip }}" }
+
+# Media paths (requires 1TB SATA SSD at /mnt/data)
+media_path: /mnt/data/media
+backup_path: /mnt/data/backups

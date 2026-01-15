@@ -1,0 +1,31 @@
+# =============================================================================
+# Syncthing Tasks - macOS
+# =============================================================================
+# File synchronization via Homebrew
+# NOTE: Homebrew/brew commands must NOT run as root
+# =============================================================================
+
+- name: Ensure Syncthing is installed
+  homebrew:
+    name: syncthing
+    state: present
+  become: no
+
+- name: Start Syncthing service
+  command: brew services start syncthing
+  args:
+    creates: "{{ ansible_env.HOME }}/Library/LaunchAgents/homebrew.mxcl.syncthing.plist"
+  register: syncthing_start
+  changed_when: "'Successfully started' in syncthing_start.stdout"
+  failed_when: false
+  become: no
+
+- name: Check Syncthing service status
+  command: brew services list
+  register: brew_services
+  changed_when: false
+  become: no
+
+- name: Show Syncthing status
+  debug:
+    msg: "Syncthing status: {{ brew_services.stdout_lines | select('match', '.*syncthing.*') | first | default('not found') }}"

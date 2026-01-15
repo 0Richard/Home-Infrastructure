@@ -1,0 +1,83 @@
+# =============================================================================
+# iCloud Backup Tasks (Mac Mini)
+# =============================================================================
+# Syncs ~/Sync to iCloud Drive daily at 3am
+# Provides offsite backup of Syncthing data
+# =============================================================================
+
+- name: Create ~/bin directory
+  file:
+    path: /Users/richardbell/bin
+    state: directory
+    mode: '0755'
+  tags: icloud-backup
+
+- name: Deploy sync-backup script
+  copy:
+    dest: /Users/richardbell/bin/sync-backup.sh
+    mode: '0755'
+    content: |
+      #!/bin/bash
+      # =============================================================================
+      # Sync Backup - rsync to iCloud Drive
+      # =============================================================================
+      # Runs daily at 3am via launchd
+      # Syncs ~/Sync to iCloud Drive for offsite backup
+      # =============================================================================
+      
+      LOG=~/Library/Logs/sync-backup.log
+      echo "$(date): Starting backup" >> "$LOG"
+      
+      rsync -av --delete \
+        --exclude='node_modules' \
+        --exclude='.git' \
+        --exclude='.DS_Store' \
+        --exclude='.stfolder' \
+        --exclude='.sync-conflict-*' \
+        --exclude='*.pyc' \
+        --exclude='__pycache__' \
+        ~/Sync/ ~/Library/Mobile\ Documents/com~apple~CloudDocs/Sync-Backup/ \
+        >> "$LOG" 2>&1
+      
+      echo "$(date): Backup complete" >> "$LOG"
+  tags: icloud-backup
+
+- name: Deploy launchd plist for backup
+  copy:
+    dest: /Users/richardbell/Library/LaunchAgents/com.richardbell.sync-backup.plist
+    mode: '0644'
+    content: |
+      <?xml version="1.0" encoding="UTF-8"?>
+      <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+      <plist version="1.0">
+      <dict>
+          <key>Label</key>
+          <string>com.richardbell.sync-backup</string>
+          <key>ProgramArguments</key>
+          <array>
+              <string>/Users/richardbell/bin/sync-backup.sh</string>
+          </array>
+          <key>StartCalendarInterval</key>
+          <dict>
+              <key>Hour</key>
+              <integer>3</integer>
+              <key>Minute</key>
+              <integer>0</integer>
+          </dict>
+          <key>StandardOutPath</key>
+          <string>/Users/richardbell/Library/Logs/sync-backup.log</string>
+          <key>StandardErrorPath</key>
+          <string>/Users/richardbell/Library/Logs/sync-backup.log</string>
+          <key>RunAtLoad</key>
+          <true/>
+      </dict>
+      </plist>
+  notify: Load sync-backup launchd
+  tags: icloud-backup
+
+- name: Ensure iCloud Sync-Backup directory exists
+  file:
+    path: "/Users/richardbell/Library/Mobile Documents/com~apple~CloudDocs/Sync-Backup"
+    state: directory
+    mode: '0755'
+  tags: icloud-backup

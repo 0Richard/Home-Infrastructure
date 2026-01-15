@@ -1,0 +1,39 @@
+# =============================================================================
+# Homebrew Tasks - macOS
+# =============================================================================
+# Package management for macOS
+# NOTE: Homebrew must NOT run as root - all tasks use become: no
+# =============================================================================
+
+- name: Update Homebrew
+  homebrew:
+    update_homebrew: yes
+  become: no
+
+- name: Install common Homebrew packages
+  homebrew:
+    name: "{{ homebrew_common_packages }}"
+    state: present
+  become: no
+  when: homebrew_common_packages is defined
+
+- name: Install extra Homebrew packages
+  homebrew:
+    name: "{{ homebrew_extra_packages }}"
+    state: present
+  become: no
+  when: homebrew_extra_packages is defined and homebrew_extra_packages | length > 0
+
+- name: Install common casks
+  homebrew_cask:
+    name: "{{ homebrew_common_casks }}"
+    state: present
+  become: no
+  when: homebrew_common_casks is defined
+
+- name: Install extra casks
+  homebrew_cask:
+    name: "{{ homebrew_extra_casks }}"
+    state: present
+  become: no
+  when: homebrew_extra_casks is defined and homebrew_extra_casks | length > 0

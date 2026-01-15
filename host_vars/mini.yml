@@ -1,0 +1,16 @@
+# =============================================================================
+# mac-mini - Host Variables
+# =============================================================================
+
+# Role: Dev server / always-on Mac
+
+# Additional packages beyond common
+homebrew_extra_packages:
+  - graphviz
+  - nmap
+  - lua
+  - yarn
+  - jq
+
+homebrew_extra_casks: []
+  # - folx  # Already installed

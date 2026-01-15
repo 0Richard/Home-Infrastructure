@@ -1,0 +1,70 @@
+#!/bin/bash
+# =============================================================================
+# Docker Backup Script
+# =============================================================================
+# Location: /usr/local/bin/docker-backup
+# 
+# Backs up Docker container data to:
+#   - /mnt/data/backups/ (local, keeps 7 days)
+#   - ~/Sync/backups/nsa/ (syncs to Macs via Syncthing)
+#
+# Run manually or via cron:
+#   0 3 * * 0 /usr/local/bin/docker-backup
+# =============================================================================
+
+set -e
+
+# Configuration
+DOCKER_DIR="/srv/docker"
+LOCAL_BACKUP_DIR="/mnt/data/backups"
+SYNC_BACKUP_DIR="/home/richardbell/Sync/backups/nsa"
+DATE=$(date +%Y%m%d-%H%M%S)
+BACKUP_NAME="docker-backup-$DATE.tar.gz"
+KEEP_DAYS=7
+
+# Ensure directories exist
+mkdir -p "$LOCAL_BACKUP_DIR"
+mkdir -p "$SYNC_BACKUP_DIR"
+
+echo "=== Docker Backup Started: $(date) ==="
+
+# Stop containers for consistent backup
+echo "Stopping containers..."
+cd "$DOCKER_DIR"
+docker compose stop
+
+# Create backup
+echo "Creating backup: $BACKUP_NAME"
+tar -czf "$LOCAL_BACKUP_DIR/$BACKUP_NAME" \
+    --exclude='*/cache' \
+    --exclude='*/log' \
+    --exclude='*.log' \
+    -C "$DOCKER_DIR" \
+    docker-compose.yml \
+    homeassistant \
+    zigbee2mqtt \
+    mosquitto \
+    pihole \
+    plex/config \
+    nginx
+
+# Restart containers
+echo "Starting containers..."
+docker compose start
+
+# Copy latest to Sync folder (for offsite backup)
+echo "Copying to Sync folder..."
+cp "$LOCAL_BACKUP_DIR/$BACKUP_NAME" "$SYNC_BACKUP_DIR/docker-backup-latest.tar.gz"
+
+# Clean up old backups (keep last 7)
+echo "Cleaning up old backups..."
+ls -t "$LOCAL_BACKUP_DIR"/docker-backup-*.tar.gz 2>/dev/null | tail -n +$((KEEP_DAYS + 1)) | xargs -r rm -f
+
+# Summary
+BACKUP_SIZE=$(du -h "$LOCAL_BACKUP_DIR/$BACKUP_NAME" | cut -f1)
+echo ""
+echo "=== Backup Complete ==="
+echo "File: $LOCAL_BACKUP_DIR/$BACKUP_NAME"
+echo "Size: $BACKUP_SIZE"
+echo "Synced: $SYNC_BACKUP_DIR/docker-backup-latest.tar.gz"
+echo "Finished: $(date)"

@@ -1,0 +1,33 @@
+# =============================================================================
+# Mac Mini Playbook
+# =============================================================================
+# Dev server and backup hub
+# Hostname: mini
+# =============================================================================
+
+- name: Configure Mac Mini
+  hosts: mini
+  gather_facts: true
+  become: yes
+  become_method: sudo
+  vars_files:
+    - vault.yml
+
+  tasks:
+    - import_tasks: tasks/common.yml
+    - import_tasks: tasks/ssh.yml
+    - import_tasks: tasks/homebrew.yml
+      tags: homebrew
+    - import_tasks: tasks/syncthing-macos.yml
+      tags: syncthing
+    - import_tasks: tasks/icloud-backup.yml
+      tags: icloud-backup
+    - import_tasks: tasks/mackup.yml
+      tags: mackup
+    - import_tasks: tasks/hosts-macos.yml
+      tags: [hosts, dns]
+
+  handlers:
+    - name: Load sync-backup launchd
+      command: launchctl load ~/Library/LaunchAgents/com.richard.sync-backup.plist
+      become: no

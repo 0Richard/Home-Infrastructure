@@ -1,0 +1,18 @@
+# =============================================================================
+# Site Playbook - All Machines
+# =============================================================================
+# Usage:
+#   ansible-playbook site.yml                    # Everything
+#   ansible-playbook site.yml --limit nsa # Just NSA
+#   ansible-playbook site.yml --limit macos      # Just Macs
+#   ansible-playbook site.yml --tags docker      # Just Docker tasks
+# =============================================================================
+
+- name: Configure nsa
+  import_playbook: nsa.yml
+
+- name: Configure mac-mini
+  import_playbook: mini.yml
+
+- name: Configure mb4
+  import_playbook: mb4.yml

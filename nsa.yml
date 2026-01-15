@@ -1,0 +1,118 @@
+# =============================================================================
+# nsa Playbook
+# =============================================================================
+# Debian 13 home server: Docker, WireGuard VPN, DNS, Home Automation, Media
+#
+# Usage:
+#   ansible-playbook nsa.yml
+#   ansible-playbook nsa.yml --tags docker
+#   ansible-playbook nsa.yml --check --diff
+# =============================================================================
+
+- hosts: nsa
+  gather_facts: true
+  become: yes
+
+  vars_files:
+    - vault.yml
+
+  tasks:
+    # =========================================================================
+    # COMMON
+    # =========================================================================
+    - import_tasks: tasks/common.yml
+      tags: [common]
+
+    # =========================================================================
+    # SSH
+    # =========================================================================
+    - import_tasks: tasks/ssh.yml
+      tags: [ssh]
+
+    # =========================================================================
+    # COCKPIT (Web Admin)
+    # =========================================================================
+    - import_tasks: tasks/cockpit.yml
+      tags: [cockpit]
+
+    # =========================================================================
+    # AVAHI (mDNS)
+    # =========================================================================
+    - import_tasks: tasks/avahi.yml
+      tags: [avahi, mdns]
+
+    # =========================================================================
+    # DOCKER
+    # =========================================================================
+    - import_tasks: tasks/docker.yml
+      tags: [docker]
+
+    # =========================================================================
+    # NFTABLES (Firewall)
+    # =========================================================================
+    - import_tasks: tasks/nftables.yml
+      tags: [firewall, nftables]
+
+    # =========================================================================
+    # PI-HOLE (DNS + Ad Blocking) - Replaces dnsmasq
+    # =========================================================================
+    - import_tasks: tasks/pihole.yml
+      tags: [dns, pihole]
+
+    # =========================================================================
+    # PLEX (Media Server)
+    # =========================================================================
+    - import_tasks: tasks/plex.yml
+      tags: [media, plex]
+
+    # =========================================================================
+    # WIREGUARD (VPN)
+    # =========================================================================
+    - import_tasks: tasks/wireguard.yml
+      tags: [vpn, wireguard]
+
+    # =========================================================================
+    # SYNCTHING
+    # =========================================================================
+    - import_tasks: tasks/syncthing-linux.yml
+      tags: [syncthing]
+
+    # =========================================================================
+    # BACKUP
+    # =========================================================================
+    - import_tasks: tasks/backup.yml
+      tags: [backup]
+
+  # ===========================================================================
+  # HANDLERS
+  # ===========================================================================
+  handlers:
+    - name: Reload nftables
+      service:
+        name: nftables
+        state: reloaded
+
+    - name: Restart wireguard
+      service:
+        name: wg-quick@wg0
+        state: restarted
+
+    - name: Restart sshd
+      service:
+        name: ssh
+        state: restarted
+
+    - name: Restart avahi
+      service:
+        name: avahi-daemon
+        state: restarted
+
+    - name: Restart docker containers
+      command: docker compose restart
+      args:
+        chdir: /srv/docker
+
+    - name: Restart dnsmasq
+      service:
+        name: dnsmasq
+        state: restarted

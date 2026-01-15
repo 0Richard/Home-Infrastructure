@@ -1,0 +1,54 @@
+# =============================================================================
+# Docker Tasks - macOS (Colima)
+# =============================================================================
+# Sets up Docker via Colima for local development containers
+# Similar structure to NSA: ~/docker/ for compose and data
+# =============================================================================
+
+- name: Create Docker data directory
+  file:
+    path: "{{ docker_data_path }}"
+    state: directory
+    mode: '0755'
+
+- name: Create Docker service directories
+  file:
+    path: "{{ docker_data_path }}/{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - postgres/data
+    - dynamodb/data
+
+- name: Deploy docker-compose.yml
+  copy:
+    src: files/mb4/docker-compose.yml
+    dest: "{{ docker_data_path }}/docker-compose.yml"
+    mode: '0644'
+
+- name: Deploy Docker environment file
+  template:
+    src: templates/mb4/docker.env.j2
+    dest: "{{ docker_data_path }}/.env"
+    mode: '0600'
+
+- name: Check if Colima is running
+  command: colima status
+  register: colima_status
+  changed_when: false
+  failed_when: false
+
+- name: Start Colima (if not running)
+  command: >
+    colima start
+    --cpu {{ colima_cpu | default(4) }}
+    --memory {{ colima_memory | default(8) }}
+    --disk {{ colima_disk | default(60) }}
+  when: colima_status.rc != 0
+
+- name: Start Docker containers
+  command: docker compose up -d
+  args:
+    chdir: "{{ docker_data_path }}"
+  register: docker_up
+  changed_when: "'Started' in docker_up.stdout or 'Created' in docker_up.stdout"

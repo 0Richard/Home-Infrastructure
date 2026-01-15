@@ -1,0 +1,29 @@
+# =============================================================================
+# mb4 - Host Variables
+# =============================================================================
+
+# Role: Daily workstation
+
+# Docker configuration (Colima)
+docker_data_path: "{{ ansible_env.HOME }}/docker"
+colima_cpu: 4
+colima_memory: 8
+colima_disk: 60
+
+# Additional packages beyond common
+homebrew_extra_packages:
+  - ansible
+  - pipx
+  - nvm
+  - awscli
+  - azure-cli
+  - colima
+  - docker
+  - docker-compose
+
+homebrew_extra_casks:
+  - visual-studio-code
+  - notion
+  - slack
+  - zoom
+  - google-cloud-sdk

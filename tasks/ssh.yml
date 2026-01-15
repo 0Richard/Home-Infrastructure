@@ -1,0 +1,64 @@
+# =============================================================================
+# SSH Tasks
+# =============================================================================
+# Deploy SSH authorized keys and hardening config
+# =============================================================================
+
+- name: Set home directory path
+  set_fact:
+    user_home: "{{ '/Users/' ~ username if ansible_system == 'Darwin' else '/home/' ~ username }}"
+  tags: always
+
+# User SSH setup
+- name: Ensure .ssh directory exists for {{ username }}
+  file:
+    path: "{{ user_home }}/.ssh"
+    state: directory
+    mode: '0700'
+    owner: "{{ username }}"
+
+- name: Deploy authorized_keys for {{ username }}
+  authorized_key:
+    user: "{{ username }}"
+    state: present
+    key: "{{ item }}"
+  loop: "{{ vault_ssh_authorized_keys }}"
+  when: vault_ssh_authorized_keys is defined
+
+- name: Ensure correct permissions on {{ username }} authorized_keys
+  file:
+    path: "{{ user_home }}/.ssh/authorized_keys"
+    mode: '0600'
+    owner: "{{ username }}"
+  when: vault_ssh_authorized_keys is defined
+
+# Root SSH access (Linux only)
+- name: Ensure .ssh directory exists for root
+  file:
+    path: /root/.ssh
+    state: directory
+    mode: '0700'
+    owner: root
+    group: root
+  when: ansible_system == 'Linux'
+
+- name: Deploy authorized_keys for root
+  authorized_key:
+    user: root
+    state: present
+    key: "{{ item }}"
+  loop: "{{ vault_ssh_authorized_keys }}"
+  when: 
+    - vault_ssh_authorized_keys is defined
+    - ansible_system == 'Linux'
+
+# SSH Hardening (Linux only)
+- name: Deploy SSH hardening config
+  copy:
+    src: files/nsa/sshd_hardening.conf
+    dest: /etc/ssh/sshd_config.d/99-hardening.conf
+    owner: root
+    group: root
+    mode: '0644'
+  when: ansible_system == 'Linux'
+  notify: Restart sshd

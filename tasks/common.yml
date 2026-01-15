@@ -1,0 +1,41 @@
+# =============================================================================
+# Common Tasks - All Platforms
+# =============================================================================
+# SSH config, shell setup, basic structure
+# =============================================================================
+
+- name: Set home directory path
+  set_fact:
+    user_home: "{{ '/Users/richardbell' if ansible_system == 'Darwin' else '/home/richardbell' }}"
+  tags: always
+
+- name: Ensure .ssh directory exists
+  file:
+    path: "{{ user_home }}/.ssh"
+    state: directory
+    mode: '0700'
+    owner: richardbell
+
+- name: Ensure .local/bin exists
+  file:
+    path: "{{ user_home }}/.local/bin"
+    state: directory
+    mode: '0755'
+    owner: richardbell
+
+- name: Ensure shell config directory exists
+  file:
+    path: "{{ user_home }}/.config/shell"
+    state: directory
+    mode: '0755'
+    owner: richardbell
+
+- name: Check if Sync folder exists
+  stat:
+    path: "{{ user_home }}/Sync"
+  register: sync_folder
+
+- name: Warn if Sync folder missing
+  debug:
+    msg: "WARNING: ~/Sync folder not found. Install and configure Syncthing."
+  when: not sync_folder.stat.exists

@@ -1,0 +1,50 @@
+# =============================================================================
+# Plex Tasks
+# =============================================================================
+# Create directories for Plex media server
+# =============================================================================
+
+- name: Create Plex directories
+  file:
+    path: "/srv/docker/plex/{{ item }}"
+    state: directory
+    owner: richardbell
+    group: docker
+    mode: '0775'
+  loop:
+    - config
+    - transcode
+  tags: plex
+
+- name: Create media directories on data drive
+  file:
+    path: "/mnt/data/media/{{ item }}"
+    state: directory
+    owner: richardbell
+    group: richardbell
+    mode: '0755'
+  loop:
+    - movies
+    - tv
+    - music
+  tags: plex
+
+- name: Reminder about media library
+  debug:
+    msg: |
+      Plex media directories created at /mnt/data/media/
+      
+      Folder structure:
+        /mnt/data/media/movies/Movie Name (2024)/Movie Name (2024).mkv
+        /mnt/data/media/tv/Show Name/Season 01/Show Name S01E01.mkv
+        /mnt/data/media/music/Artist/Album/01 - Track.mp3
+      
+      Access Plex: http://192.168.1.183:32400/web
+      
+      First-time setup:
+        1. Get claim token from https://plex.tv/claim
+        2. Add to /srv/docker/.env as PLEX_CLAIM=claim-xxxxx
+        3. Run: docker compose up -d plex
+      
+      Note: Requires 1TB SATA SSD mounted at /mnt/data
+  tags: plex

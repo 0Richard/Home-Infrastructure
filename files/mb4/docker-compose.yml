@@ -1,0 +1,57 @@
+# =============================================================================
+# MB4 Docker Compose - Local Development Services
+# =============================================================================
+# Location: ~/docker/docker-compose.yml
+#
+# Commands:
+#   docker compose up -d              Start all services
+#   docker compose logs -f            View logs
+#   docker compose down               Stop all services
+#
+# Requires: Colima running (colima start)
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL - Local development database
+  # Access: localhost:5432
+  # Data: ./postgres/data/
+  # ---------------------------------------------------------------------------
+  postgres:
+    container_name: postgres
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-dev}
+    volumes:
+      - ./postgres/data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # DynamoDB Local - AWS DynamoDB emulator for local development
+  # Access: localhost:8000
+  # Data: ./dynamodb/data/
+  # AWS CLI: aws dynamodb list-tables --endpoint-url http://localhost:8000
+  # ---------------------------------------------------------------------------
+  dynamodb:
+    container_name: dynamodb
+    image: amazon/dynamodb-local:latest
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath /data"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./dynamodb/data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:8000 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

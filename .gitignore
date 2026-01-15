@@ -1,0 +1,51 @@
+# =============================================================================
+# Infrastructure .gitignore
+# =============================================================================
+
+# Vault password file (NEVER commit)
+.vault_password
+vault_password.txt
+.vault_pass
+
+# Unencrypted secrets (if accidentally created)
+**/secrets.yml
+**/*.secret
+**/*.key
+!*.pub
+
+# Backup files
+*.bak
+*.orig
+*.backup
+*~
+
+# Local overrides
+*.local.yml
+local_*.yml
+
+# macOS
+.DS_Store
+._*
+.AppleDouble
+.LSOverride
+
+# Ansible
+*.retry
+.ansible/
+
+# Temporary files
+tmp/
+*.tmp
+*.swp
+*.swo
+
+# Editor
+.idea/
+.vscode/
+*.sublime-*
+
+# Python (if using venv)
+__pycache__/
+*.pyc
+venv/
+.env

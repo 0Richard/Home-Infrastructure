@@ -149,4 +149,12 @@ See `docs/known-issues.md` for current issues and workarounds.
 **Active Issues:**
 - **Pi-hole DNS** - Plusnet Hub Two router intercepts ALL UDP port 53 traffic on LAN. Root cause: router DNS interception (not configurable). Workarounds:
   - `/etc/hosts` entries on macOS clients (name resolution only, no ad-blocking)
-  - WireGuard split tunnel routes DNS via VPN to 10.0.0.1 (full Pi-hole functionality)
+  - WireGuard split tunnel routes DNS via VPN to 10.0.0.1 (full Pi-hole functionality) - **Verified 2026-01-16**
+
+## Verified Tests
+
+| Date | Test | Result |
+|------|------|--------|
+| 2026-01-16 | WireGuard split tunnel DNS | ✅ Pass - `dig @10.0.0.1 google.com` resolves |
+| 2026-01-16 | Pi-hole ad-blocking via VPN | ✅ Pass - `ads.google.com` returns `0.0.0.0` |
+| 2026-01-16 | NSA services via VPN | ✅ Pass - All services accessible |

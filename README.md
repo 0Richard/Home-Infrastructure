@@ -44,9 +44,9 @@ Personal infrastructure-as-code for home network devices.
 | 12 | Weekly Docker backup | ✅ Done | Sun 3am → Syncthing |
 | 13 | **Pi-hole DNS (LAN)** | ❌ Blocked | Router intercepts UDP 53. **Plan:** Replace router or use Pi-hole DHCP |
 | 14 | **Pi-hole DNS (VPN full)** | ❌ Blocked | Same router issue. **Plan:** Fix with LAN fix |
-| 15 | **Pi-hole DNS (VPN split)** | ✅ Done | Works via 10.0.0.1 |
+| 15 | **Pi-hole DNS (VPN split)** | ✅ Done | Works via 10.0.0.1 (verified 2026-01-16) |
 | 16 | **Ad-blocking (LAN)** | ❌ Blocked | Depends on DNS. **Plan:** Fix with DNS fix |
-| 17 | **Ad-blocking (VPN split)** | ✅ Done | Works when split tunnel active |
+| 17 | **Ad-blocking (VPN split)** | ✅ Done | Works when split tunnel active (verified 2026-01-16) |
 | 18 | **DNS redirect (hardcoded)** | ❌ Blocked | Packets don't reach NSA. **Plan:** Fix with router replacement |
 | 19 | Local DNS names | ⚠️ Workaround | Via /etc/hosts on Macs |
 
@@ -266,6 +266,14 @@ ansible-vault rekey vault.yml
 ```
 
 See `tests/README.md` for details.
+
+### Manual Verification Log
+
+| Date | Test | Result | Notes |
+|------|------|--------|-------|
+| 2026-01-16 | WireGuard split tunnel DNS | ✅ Pass | `dig @10.0.0.1 google.com` resolves correctly |
+| 2026-01-16 | Pi-hole ad-blocking via VPN | ✅ Pass | `ads.google.com` → `0.0.0.0` (blocked) |
+| 2026-01-16 | NSA services via VPN | ✅ Pass | All services accessible from MB4 |
 
 ## NSA Server Baseline
 

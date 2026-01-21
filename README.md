@@ -2,6 +2,36 @@
 
 Personal infrastructure-as-code for home network devices.
 
+## Executive Summary
+
+**4 Devices** managed via Ansible:
+
+| Device | Role | Key Services |
+|--------|------|--------------|
+| **NSA** (Debian) | Home server | Pi-hole DNS, Home Assistant, Plex, WireGuard VPN, Zigbee |
+| **MKT** (MikroTik) | Router | PPPoE WAN, DHCP, WiFi, Guest network |
+| **Mini** (Mac) | Backup hub | Syncthing, iCloud backup |
+| **MB4** (Mac) | Workstation | Syncthing, Docker dev environment |
+
+**3 Networks:**
+
+| Network | Subnet | Purpose |
+|---------|--------|---------|
+| LAN | 192.168.1.0/24 | Main network, Pi-hole DNS |
+| Guest | 192.168.10.0/24 | Isolated, public DNS (1.1.1.1) |
+| VPN | 10.0.0.0/24 | WireGuard remote access |
+
+**Quick Access (LAN & VPN):**
+
+| Service | URL |
+|---------|-----|
+| Home Assistant | http://ha:8123 |
+| Pi-hole Admin | https://pihole/admin |
+| Plex | http://plex:32400/web |
+| Cockpit | https://nsa:9090 |
+
+---
+
 ## Devices
 
 | Device | Hostname | Type | Chip | RAM | Storage | OS |
@@ -20,7 +50,7 @@ Personal infrastructure-as-code for home network devices.
 | Mini | Dev server / Backup hub | Syncthing, iCloud backup |
 | MB4 | Daily workstation | Syncthing, Docker (Colima) |
 | iOS | Mobile | Syncthing |
-| Router | Network gateway | DHCP, WAN |
+| Router | Network gateway | PPPoE, DHCP, WiFi, Guest VLAN, Firewall |
 
 ---
 
@@ -82,9 +112,10 @@ Personal infrastructure-as-code for home network devices.
 | 4 | DNS to Pi-hole | ✅ Done | Pi-hole primary, 1.1.1.1 fallback |
 | 5 | PPPoE (Plusnet) | ✅ Done | Replaced Plusnet Hub Two |
 | 6 | SSH access | ✅ Done | `ssh admin@mkt` |
-| 7 | WiFi (2.4/5GHz) | ✅ Done | WPA2/WPA3-PSK |
+| 7 | WiFi (2.4/5GHz) | ✅ Done | WPA2/WPA3-PSK with PMF |
 | 8 | Guest WiFi | ✅ Done | SSID: guestexpress |
-| 9 | Ansible managed | ✅ Done | `ansible-playbook mkt.yml` |
+| 9 | Guest isolation | ✅ Done | 192.168.10.0/24, blocked from LAN |
+| 10 | Ansible managed | ✅ Done | `ansible-playbook mkt.yml` |
 
 ---
 
@@ -99,8 +130,8 @@ Personal infrastructure-as-code for home network devices.
 ┌───────────────────────────────────────────────────────────────────┐
 │                    ROUTER (MikroTik hAP ax³)                      │
 │                         192.168.1.1                               │
-│  WAN: PPPoE │ LAN: 192.168.1.0/24 │ WiFi: 2.4/5GHz + Guest       │
-│  DHCP: 192.168.1.100-200 │ DNS: Pi-hole + 1.1.1.1 fallback       │
+│  WAN: PPPoE │ LAN: 192.168.1.0/24 │ Guest: 192.168.10.0/24       │
+│  DHCP: .100-.200 │ DNS: Pi-hole (LAN) / 1.1.1.1 (Guest)          │
 └───────────────────────────────────────────────────────────────────┘
          │                    │                    │
          ▼                    ▼                    ▼
@@ -114,12 +145,12 @@ Personal infrastructure-as-code for home network devices.
 │  Home Assistant │  └─────────────────┘  └─────────────────┘
 │  Plex, nginx    │
 └─────────────────┘
-         │
-         │ WireGuard VPN (10.0.0.0/24)
-         ▼
-┌─────────────────┐
-│  Remote Clients │
-│  10.0.0.2-254   │
+         │                              ┌─────────────────┐
+         │ WireGuard VPN (10.0.0.0/24)  │  Guest WiFi     │
+         ▼                              │  192.168.10.x   │
+┌─────────────────┐                     │  (isolated)     │
+│  Remote Clients │                     │  DNS: 1.1.1.1   │
+│  10.0.0.2-254   │                     └─────────────────┘
 └─────────────────┘
 ```
 
@@ -128,11 +159,12 @@ Personal infrastructure-as-code for home network devices.
 | Setting | Value |
 |---------|-------|
 | LAN Subnet | 192.168.1.0/24 |
+| Guest Subnet | 192.168.10.0/24 (isolated) |
 | Gateway | 192.168.1.1 (MikroTik) |
 | DNS Primary | 192.168.1.183 (Pi-hole) |
 | DNS Fallback | 1.1.1.1 (Cloudflare) |
 | VPN Subnet | 10.0.0.0/24 |
-| WAN | Plusnet FTTX 1000 Mbps |
+| WAN | Plusnet FTTC (static IP) |
 
 ### Static IPs (DHCP Reservations)
 
@@ -326,6 +358,9 @@ See `tests/README.md` for details.
 
 | Date | Test | Result | Notes |
 |------|------|--------|-------|
+| 2026-01-21 | Guest network isolation | ✅ Pass | 192.168.10.x, internet works, LAN blocked |
+| 2026-01-21 | WireGuard full tunnel | ✅ Pass | Remote access to ha, pihole, plex |
+| 2026-01-21 | Tests via VPN | ✅ Pass | 25/25 MikroTik tests from offsite |
 | 2026-01-20 | Pi-hole DNS from LAN | ✅ Pass | `dig @192.168.1.183 google.com` works |
 | 2026-01-20 | MikroTik Ansible tests | ✅ Pass | 25/25 tests passed |
 | 2026-01-20 | Guest WiFi | ✅ Pass | SSID guestexpress working |

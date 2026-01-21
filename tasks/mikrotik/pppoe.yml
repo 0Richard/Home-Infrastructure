@@ -1,0 +1,10 @@
+# =============================================================================
+# MikroTik PPPoE WAN Configuration
+# =============================================================================
+
+- name: Configure PPPoE client
+  community.routeros.command:
+    commands:
+      - :if ([/interface pppoe-client find name="{{ pppoe_interface }}"] = "") do={ /interface pppoe-client add name="{{ pppoe_interface }}" interface="{{ pppoe_physical_interface }}" user="{{ vault_mikrotik_pppoe_username }}" password="{{ vault_mikrotik_pppoe_password }}" add-default-route=yes use-peer-dns=no disabled=no } else={ /interface pppoe-client set [find name="{{ pppoe_interface }}"] interface="{{ pppoe_physical_interface }}" user="{{ vault_mikrotik_pppoe_username }}" password="{{ vault_mikrotik_pppoe_password }}" add-default-route=yes use-peer-dns=no disabled=no }
+  changed_when: false
+  no_log: true

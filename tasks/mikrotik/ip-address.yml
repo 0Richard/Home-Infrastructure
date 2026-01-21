@@ -1,0 +1,9 @@
+# =============================================================================
+# MikroTik IP Address Configuration
+# =============================================================================
+
+- name: Configure LAN IP address on bridge
+  community.routeros.command:
+    commands:
+      - :if ([/ip address find address="{{ lan_ip }}/{{ lan_netmask }}" interface="{{ bridge_name }}"] = "") do={ /ip address add address="{{ lan_ip }}/{{ lan_netmask }}" interface="{{ bridge_name }}" }
+  changed_when: false

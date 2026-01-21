@@ -1,0 +1,16 @@
+# =============================================================================
+# MikroTik Bridge Configuration
+# =============================================================================
+
+- name: Ensure bridge exists
+  community.routeros.command:
+    commands:
+      - :if ([/interface bridge find name="{{ bridge_name }}"] = "") do={ /interface bridge add name="{{ bridge_name }}" }
+  changed_when: false
+
+- name: Add ports to bridge
+  community.routeros.command:
+    commands:
+      - :if ([/interface bridge port find interface="{{ item }}" bridge="{{ bridge_name }}"] = "") do={ /interface bridge port add bridge="{{ bridge_name }}" interface="{{ item }}" }
+  loop: "{{ bridge_ports }}"
+  changed_when: false

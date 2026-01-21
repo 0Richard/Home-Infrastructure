@@ -6,11 +6,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Personal infrastructure-as-code (Ansible) managing a home network with three devices:
+Personal infrastructure-as-code (Ansible) managing a home network with four devices:
 
 - **NSA** (`192.168.1.183`): Debian 13 home server running Docker containers (Pi-hole, Home Assistant, Plex, WireGuard, nginx, Mosquitto, Zigbee2MQTT) + Cockpit web admin
 - **Mini** (`192.168.1.116`): Mac Mini M1 for Syncthing and iCloud backup
 - **MB4**: MacBook Pro M4 workstation with Syncthing and Docker (Colima) for local dev
+- **MKT** (`192.168.1.1`): MikroTik hAP ax³ router (PPPoE WAN, DHCP, firewall, WiFi)
 
 ## Commands
 
@@ -20,6 +21,7 @@ ansible-playbook site.yml          # All hosts
 ansible-playbook nsa.yml           # NSA only
 ansible-playbook mini.yml          # Mini only
 ansible-playbook mb4.yml           # MB4 only
+ansible-playbook mkt.yml           # MikroTik router only
 
 # Dry run with diff
 ansible-playbook nsa.yml --check --diff
@@ -30,8 +32,10 @@ ansible-playbook nsa.yml --tags pihole
 ansible-playbook nsa.yml --tags wireguard
 ansible-playbook mb4.yml --tags hosts    # Update /etc/hosts entries
 ansible-playbook mb4.yml --tags docker   # Set up Colima + dev containers
+ansible-playbook mkt.yml --tags dhcp     # DHCP server config
+ansible-playbook mkt.yml --tags firewall # NAT and filter rules
 
-# Available tags: common, ssh, cockpit, avahi, docker, colima, nftables, pihole, wireguard, syncthing, backup, plex, homebrew, icloud-backup, mackup, hosts, dns
+# Available tags: common, ssh, cockpit, avahi, docker, colima, nftables, pihole, wireguard, syncthing, backup, plex, homebrew, icloud-backup, mackup, hosts, dns, identity, bridge, network, ip, pppoe, wan, dhcp, nat, filter, wifi, wireless, services, security
 
 # Vault operations
 ansible-vault view vault.yml
@@ -48,7 +52,8 @@ ansible-vault edit vault.yml
 site.yml                    # Master playbook - imports all host playbooks
 ├── nsa.yml                 # Linux server: Docker services, firewall, VPN
 ├── mini.yml                # macOS: Syncthing, iCloud backup, Homebrew
-└── mb4.yml                 # macOS: Syncthing, Homebrew
+├── mb4.yml                 # macOS: Syncthing, Homebrew
+└── mkt.yml                 # MikroTik router: PPPoE, DHCP, firewall, WiFi
 
 tasks/                      # Reusable task modules
 ├── common.yml              # SSH dirs, shell config, Sync folder
@@ -65,7 +70,17 @@ tasks/                      # Reusable task modules
 ├── homebrew.yml            # Homebrew packages/casks
 ├── mackup.yml              # App settings backup (macOS)
 ├── hosts-macos.yml         # /etc/hosts entries for NSA services
-└── plex.yml                # Media server directories
+├── plex.yml                # Media server directories
+└── mikrotik/               # MikroTik router tasks
+    ├── identity.yml        # Router name
+    ├── bridge.yml          # LAN bridge config
+    ├── ip-address.yml      # LAN IP
+    ├── dhcp-server.yml     # DHCP pool, leases, DNS
+    ├── pppoe.yml           # WAN PPPoE connection
+    ├── firewall-nat.yml    # NAT masquerade, port forwards
+    ├── firewall-filter.yml # Input/forward chain rules
+    ├── wifi.yml            # WiFi config
+    └── services.yml        # Enable/disable services
 
 files/nsa/                  # Static config files deployed to NSA
 ├── docker-compose.yml      # All Docker service definitions
@@ -80,17 +95,18 @@ templates/nsa/              # Jinja2 templates
 
 group_vars/                 # Variables by group
 ├── linux_servers.yml       # Linux-specific (apt, systemd)
-└── macos.yml               # macOS-specific (homebrew paths)
+├── macos.yml               # macOS-specific (homebrew paths)
+└── network_devices.yml     # MikroTik connection settings
 
 host_vars/                  # Variables by host (override group_vars)
 ├── nsa.yml                 # NSA-specific config
 ├── mini.yml                # Mini-specific config
-└── mb4.yml                 # MB4-specific config
+├── mb4.yml                 # MB4-specific config
+└── mkt.yml                 # MikroTik router config
 
 docs/                       # Documentation
-├── network-design.md       # Network architecture
-├── nsa-migration.md        # NSA rebuild runbook
-└── known-issues.md         # Current issues and workarounds
+├── guest-wifi-qr.png       # Guest WiFi QR code
+└── nsa-migration.md        # NSA rebuild runbook
 ```
 
 ## NSA Services
@@ -128,33 +144,41 @@ Key variables in `vault.yml`:
 - `vault_pihole_password` - Pi-hole admin
 - `vault_plex_claim` - Plex setup token (expires in 4 min, get from plex.tv/claim)
 - `vault_ssh_authorized_keys` - SSH public keys
+- `vault_mikrotik_admin_password` - Router admin password
+- `vault_mikrotik_pppoe_username`, `vault_mikrotik_pppoe_password` - ISP credentials
+- `vault_mikrotik_wifi_ssid`, `vault_mikrotik_wifi_password` - WiFi config
+- `vault_mikrotik_guest_ssid`, `vault_mikrotik_guest_password` - Guest WiFi config
 
 ## Network
 
-- LAN IPv4: `192.168.1.0/24`, Gateway: `192.168.1.254`
+- LAN IPv4: `192.168.1.0/24`, Gateway: `192.168.1.1` (MikroTik hAP ax³)
 - LAN IPv6: `fd7a:94b4:f195:7248::/64`
 - VPN: `10.0.0.0/24` (WireGuard on NSA)
-- DNS: Pi-hole at `192.168.1.183:53` - **blocked on LAN by router** (see Known Issues)
+- DNS: Pi-hole at `192.168.1.183:53` (primary), 1.1.1.1 (fallback)
 - mDNS: Avahi for `.local` resolution (e.g., `nsa.local`)
-- Hosts file: macOS clients have `/etc/hosts` entries as DNS workaround
-- DNS redirect: Configured but ineffective (router intercepts before packets reach NSA)
+- Router: MikroTik hAP ax³ (replaced Plusnet Hub Two on 2026-01-20)
 - All services accessible from LAN or VPN only (except WireGuard port 51820)
-
-See `docs/network-design.md` for full network architecture.
 
 ## Known Issues
 
-See `docs/known-issues.md` for current issues and workarounds.
+| Issue | Status | Notes |
+|-------|--------|-------|
+| Pi-hole DNS not responding | 🔴 Active | DNS queries to 192.168.1.183 timeout; container shows healthy but FTL not responding. Restart container to temporarily fix. |
+| iCloud Private Relay incompatible | ℹ️ Info | Guest WiFi shows "not compatible with Private Relay" - expected for IPv4-only networks. |
 
-**Active Issues:**
-- **Pi-hole DNS** - Plusnet Hub Two router intercepts ALL UDP port 53 traffic on LAN. Root cause: router DNS interception (not configurable). Workarounds:
-  - `/etc/hosts` entries on macOS clients (name resolution only, no ad-blocking)
-  - WireGuard split tunnel routes DNS via VPN to 10.0.0.1 (full Pi-hole functionality) - **Verified 2026-01-16**
+## Resolved Issues
+
+| Issue | Resolution | Date |
+|-------|------------|------|
+| Network issues (browsers/NSA failing) | Removed duplicate `bridge-lan` - must use existing `bridge` (defconf). Set `bridge_name: bridge` in host_vars/mkt.yml. | 2026-01-20 |
+| Browsers not loading (curl works) | Added MSS clamping for PPPoE (MTU 1492). Without it, large TCP packets (TLS handshakes) fail silently. | 2026-01-20 |
 
 ## Verified Tests
 
 | Date | Test | Result |
 |------|------|--------|
+| 2026-01-20 | MikroTik Ansible (25 tests) | ✅ Pass - `./tests/test-mkt.sh` |
+| 2026-01-20 | Guest WiFi connection | ✅ Pass - SSID `guestexpress` working |
+| 2026-01-20 | WiFi PMF (management-protection) | ✅ Pass - Apple security warning resolved |
 | 2026-01-16 | WireGuard split tunnel DNS | ✅ Pass - `dig @10.0.0.1 google.com` resolves |
 | 2026-01-16 | Pi-hole ad-blocking via VPN | ✅ Pass - `ads.google.com` returns `0.0.0.0` |
-| 2026-01-16 | NSA services via VPN | ✅ Pass - All services accessible |

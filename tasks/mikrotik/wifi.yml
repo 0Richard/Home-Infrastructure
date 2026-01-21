@@ -1,0 +1,58 @@
+# =============================================================================
+# MikroTik WiFi Configuration
+# =============================================================================
+# Note: hAP ax³ uses the new wifi package (not wireless)
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# Main WiFi Network
+# ---------------------------------------------------------------------------
+- name: Configure main WiFi security profile with PMF
+  community.routeros.command:
+    commands:
+      - :if ([/interface wifi security find name="security-main"] = "") do={ /interface wifi security add name="security-main" authentication-types=wpa2-psk,wpa3-psk passphrase="{{ vault_mikrotik_wifi_password }}" management-protection=allowed } else={ /interface wifi security set [find name="security-main"] authentication-types=wpa2-psk,wpa3-psk passphrase="{{ vault_mikrotik_wifi_password }}" management-protection=allowed }
+  changed_when: false
+  no_log: true
+
+- name: Configure main WiFi SSID and settings
+  community.routeros.command:
+    commands:
+      - /interface wifi set [find default-name=wifi1] configuration.ssid="{{ vault_mikrotik_wifi_ssid }}" configuration.country="{{ wifi_country }}" security=security-main disabled=no
+      - /interface wifi set [find default-name=wifi2] configuration.ssid="{{ vault_mikrotik_wifi_ssid }}" configuration.country="{{ wifi_country }}" security=security-main disabled=no
+  changed_when: false
+  no_log: true
+
+# ---------------------------------------------------------------------------
+# Guest WiFi Network
+# ---------------------------------------------------------------------------
+- name: Configure guest WiFi security profile
+  community.routeros.command:
+    commands:
+      - :if ([/interface wifi security find name="security-guest"] = "") do={ /interface wifi security add name="security-guest" authentication-types=wpa2-psk passphrase="{{ vault_mikrotik_guest_password }}" } else={ /interface wifi security set [find name="security-guest"] authentication-types=wpa2-psk passphrase="{{ vault_mikrotik_guest_password }}" }
+  changed_when: false
+  no_log: true
+  when: guest_wifi_enabled | default(false)
+
+- name: Create guest WiFi virtual AP on 5GHz
+  community.routeros.command:
+    commands:
+      - :if ([/interface wifi find name="wifi1-guest"] = "") do={ /interface wifi add name="wifi1-guest" master-interface=wifi1 configuration.ssid="{{ vault_mikrotik_guest_ssid }}" security=security-guest disabled=no }
+  changed_when: false
+  no_log: true
+  when: guest_wifi_enabled | default(false)
+
+- name: Create guest WiFi virtual AP on 2.4GHz
+  community.routeros.command:
+    commands:
+      - :if ([/interface wifi find name="wifi2-guest"] = "") do={ /interface wifi add name="wifi2-guest" master-interface=wifi2 configuration.ssid="{{ vault_mikrotik_guest_ssid }}" security=security-guest disabled=no }
+  changed_when: false
+  no_log: true
+  when: guest_wifi_enabled | default(false)
+
+- name: Add guest WiFi interfaces to bridge
+  community.routeros.command:
+    commands:
+      - :if ([/interface bridge port find interface="wifi1-guest"] = "") do={ /interface bridge port add bridge=bridge interface=wifi1-guest }
+      - :if ([/interface bridge port find interface="wifi2-guest"] = "") do={ /interface bridge port add bridge=bridge interface=wifi2-guest }
+  changed_when: false
+  when: guest_wifi_enabled | default(false)

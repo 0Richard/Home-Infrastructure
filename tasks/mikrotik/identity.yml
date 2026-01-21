@@ -1,0 +1,9 @@
+# =============================================================================
+# MikroTik Identity Configuration
+# =============================================================================
+
+- name: Set router identity
+  community.routeros.command:
+    commands:
+      - /system identity set name={{ router_identity }}
+  changed_when: false

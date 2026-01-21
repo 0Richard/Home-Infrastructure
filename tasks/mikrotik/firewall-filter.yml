@@ -1,0 +1,48 @@
+# =============================================================================
+# MikroTik Firewall Filter Rules
+# =============================================================================
+# Basic firewall rules for input and forward chains
+# =============================================================================
+
+- name: Allow established/related connections (input)
+  community.routeros.command:
+    commands:
+      - :if ([/ip firewall filter find chain=input connection-state=established,related action=accept] = "") do={ /ip firewall filter add chain=input connection-state=established,related action=accept comment="Accept established/related" place-before=0 }
+  changed_when: false
+
+- name: Drop invalid connections (input)
+  community.routeros.command:
+    commands:
+      - :if ([/ip firewall filter find chain=input connection-state=invalid action=drop] = "") do={ /ip firewall filter add chain=input connection-state=invalid action=drop comment="Drop invalid" }
+  changed_when: false
+
+- name: Allow ICMP (input)
+  community.routeros.command:
+    commands:
+      - :if ([/ip firewall filter find chain=input protocol=icmp action=accept] = "") do={ /ip firewall filter add chain=input protocol=icmp action=accept comment="Accept ICMP" }
+  changed_when: false
+
+- name: Allow SSH from LAN
+  community.routeros.command:
+    commands:
+      - :if ([/ip firewall filter find chain=input dst-port="22" src-address="{{ lan_network }}" action=accept] = "") do={ /ip firewall filter add chain=input protocol=tcp dst-port=22 src-address="{{ lan_network }}" action=accept comment="Allow SSH from LAN" }
+  changed_when: false
+
+- name: Allow established/related connections (forward)
+  community.routeros.command:
+    commands:
+      - :if ([/ip firewall filter find chain=forward connection-state=established,related action=accept] = "") do={ /ip firewall filter add chain=forward connection-state=established,related action=accept comment="Accept established/related" }
+  changed_when: false
+
+- name: Drop invalid connections (forward)
+  community.routeros.command:
+    commands:
+      - :if ([/ip firewall filter find chain=forward connection-state=invalid action=drop] = "") do={ /ip firewall filter add chain=forward connection-state=invalid action=drop comment="Drop invalid" }
+  changed_when: false
+
+- name: Allow port forwarded traffic
+  community.routeros.command:
+    commands:
+      - :if ([/ip firewall filter find chain=forward dst-port="{{ item.dst_port }}" dst-address={{ item.to_address }} action=accept] = "") do={ /ip firewall filter add chain=forward protocol={{ item.protocol }} dst-port={{ item.dst_port }} dst-address={{ item.to_address }} action=accept comment="Allow {{ item.comment | default(item.name) }}" }
+  loop: "{{ port_forwards }}"
+  changed_when: false

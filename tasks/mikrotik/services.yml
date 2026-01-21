@@ -1,0 +1,25 @@
+# =============================================================================
+# MikroTik Services Configuration
+# =============================================================================
+# Enable/disable management services for security
+# =============================================================================
+
+- name: Enable required services
+  community.routeros.command:
+    commands:
+      - /ip service set {{ item }} disabled=no
+  loop: "{{ services_enabled }}"
+  changed_when: false
+
+- name: Disable unnecessary services
+  community.routeros.command:
+    commands:
+      - /ip service set {{ item }} disabled=yes
+  loop: "{{ services_disabled }}"
+  changed_when: false
+
+- name: Restrict SSH to LAN only
+  community.routeros.command:
+    commands:
+      - /ip service set ssh address="{{ lan_network }}"
+  changed_when: false

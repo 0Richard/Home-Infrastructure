@@ -1,23 +1,14 @@
 # =============================================================================
 # macOS /etc/hosts Management
 # =============================================================================
-# Adds local network hosts for NSA services
-# Temporary workaround until Pi-hole DNS is fixed
+# Pi-hole handles local DNS (ha, laya, plex, etc.)
+# This task removes any legacy /etc/hosts entries
 # =============================================================================
 
-- name: Add NSA hosts entries to /etc/hosts
+- name: Remove legacy NSA hosts entries from /etc/hosts
   become: yes
   ansible.builtin.blockinfile:
     path: /etc/hosts
     marker: "# {mark} ANSIBLE MANAGED - NSA Services"
-    block: |
-      # NSA Server (192.168.1.183)
-      192.168.1.183  nsa nsa.local
-      192.168.1.183  pihole pihole.local
-      192.168.1.183  laya laya.local
-      192.168.1.183  hopo hopo.local
-      192.168.1.183  etc etc.local
-      192.168.1.183  ha ha.local
-      192.168.1.183  plex plex.local
-    state: present
+    state: absent
   tags: [hosts, dns]

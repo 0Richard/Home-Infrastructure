@@ -1,0 +1,30 @@
+# =============================================================================
+# MikroTik Firewall NAT Configuration
+# =============================================================================
+
+# MSS clamping is required for PPPoE (MTU 1492) to prevent TCP handshake failures
+# Use fixed MSS=1452 (1492 - 40 bytes TCP/IP overhead) for reliability
+- name: Configure MSS clamping for PPPoE outbound
+  community.routeros.command:
+    commands:
+      - :if ([/ip firewall mangle find comment="MSS clamp outbound PPPoE"] = "") do={ /ip firewall mangle add chain=forward protocol=tcp tcp-flags=syn out-interface={{ pppoe_interface }} action=change-mss new-mss=1452 passthrough=yes comment="MSS clamp outbound PPPoE" }
+  changed_when: false
+
+- name: Configure MSS clamping for PPPoE inbound
+  community.routeros.command:
+    commands:
+      - :if ([/ip firewall mangle find comment="MSS clamp inbound PPPoE"] = "") do={ /ip firewall mangle add chain=forward protocol=tcp tcp-flags=syn in-interface={{ pppoe_interface }} action=change-mss new-mss=1452 passthrough=yes comment="MSS clamp inbound PPPoE" }
+  changed_when: false
+
+- name: Configure NAT masquerade for WAN
+  community.routeros.command:
+    commands:
+      - :if ([/ip firewall nat find chain=srcnat out-interface="{{ pppoe_interface }}" action=masquerade] = "") do={ /ip firewall nat add chain=srcnat out-interface="{{ pppoe_interface }}" action=masquerade comment="Masquerade WAN" }
+  changed_when: false
+
+- name: Configure port forwards (dst-nat)
+  community.routeros.command:
+    commands:
+      - :if ([/ip firewall nat find chain=dstnat dst-port="{{ item.dst_port }}"] = "") do={ /ip firewall nat add chain=dstnat protocol={{ item.protocol }} dst-port={{ item.dst_port }} action=dst-nat to-addresses={{ item.to_address }} to-ports={{ item.to_port }} comment="{{ item.comment | default(item.name) }}" }
+  loop: "{{ port_forwards }}"
+  changed_when: false

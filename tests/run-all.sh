@@ -71,6 +71,20 @@ else
 fi
 
 # =============================================================================
+# Phase 3: MikroTik Router Tests
+# =============================================================================
+echo ""
+echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${BLUE}Phase 3: MikroTik Router Tests${NC}"
+echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+
+if [ -f "$SCRIPT_DIR/test-mkt.sh" ]; then
+    "$SCRIPT_DIR/test-mkt.sh" || MKT_FAILED=1
+else
+    echo -e "${YELLOW}SKIP: test-mkt.sh not found${NC}"
+fi
+
+# =============================================================================
 # Final Summary
 # =============================================================================
 echo ""
@@ -79,17 +93,20 @@ echo -e "${BLUE}Final Summary${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
-if [ -n "$MAC_FAILED" ] || [ -n "$NSA_FAILED" ]; then
+if [ -n "$MAC_FAILED" ] || [ -n "$NSA_FAILED" ] || [ -n "$MKT_FAILED" ]; then
     [ -n "$MAC_FAILED" ] && echo -e "${RED}✗ Mac tests: FAILED${NC}"
     [ -z "$MAC_FAILED" ] && echo -e "${GREEN}✓ Mac tests: PASSED${NC}"
     [ -n "$NSA_FAILED" ] && echo -e "${RED}✗ NSA tests: FAILED${NC}"
     [ -z "$NSA_FAILED" ] && echo -e "${GREEN}✓ NSA tests: PASSED${NC}"
+    [ -n "$MKT_FAILED" ] && echo -e "${RED}✗ MikroTik tests: FAILED${NC}"
+    [ -z "$MKT_FAILED" ] && echo -e "${GREEN}✓ MikroTik tests: PASSED${NC}"
     echo ""
     echo -e "${RED}Some tests failed!${NC}"
     exit 1
 else
     echo -e "${GREEN}✓ Mac tests: PASSED${NC}"
     echo -e "${GREEN}✓ NSA tests: PASSED${NC}"
+    echo -e "${GREEN}✓ MikroTik tests: PASSED${NC}"
     echo ""
     echo -e "${GREEN}All tests passed!${NC}"
     exit 0

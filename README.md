@@ -10,7 +10,7 @@ Personal infrastructure-as-code for home network devices.
 | Mac Mini | mini | Mac Mini | Apple M1 | 8GB | 256GB | macOS 15 |
 | MacBook Pro | mb4 | MacBook Pro 14" | Apple M4 | 48GB | 512GB | macOS 15 |
 | iPhone | ios | iPhone 17 Pro Max | A18 Pro | - | 512GB | iOS 18 |
-| Router | - | Plusnet Hub Two | - | - | - | v0.10.00.04201-PN |
+| Router | mkt | MikroTik hAP ax³ | ARM64 | 1GB | 128MB | RouterOS 7.19.6 |
 
 ### Device Roles
 
@@ -42,20 +42,11 @@ Personal infrastructure-as-code for home network devices.
 | 10 | Zigbee2MQTT | ✅ Done | Sonoff dongle connected |
 | 11 | Firewall (nftables) | ✅ Done | Default deny, explicit allow |
 | 12 | Weekly Docker backup | ✅ Done | Sun 3am → Syncthing |
-| 13 | **Pi-hole DNS (LAN)** | ❌ Blocked | Router intercepts UDP 53. **Plan:** Replace router or use Pi-hole DHCP |
-| 14 | **Pi-hole DNS (VPN full)** | ❌ Blocked | Same router issue. **Plan:** Fix with LAN fix |
-| 15 | **Pi-hole DNS (VPN split)** | ✅ Done | Works via 10.0.0.1 (verified 2026-01-16) |
-| 16 | **Ad-blocking (LAN)** | ❌ Blocked | Depends on DNS. **Plan:** Fix with DNS fix |
-| 17 | **Ad-blocking (VPN split)** | ✅ Done | Works when split tunnel active (verified 2026-01-16) |
-| 18 | **DNS redirect (hardcoded)** | ❌ Blocked | Packets don't reach NSA. **Plan:** Fix with router replacement |
-| 19 | Local DNS names | ⚠️ Workaround | Via /etc/hosts on Macs |
-
-**DNS Issue:** Plusnet Hub Two router intercepts all UDP port 53 traffic. See `docs/known-issues.md`.
-
-**Planned fixes:**
-1. **Replace router** - Use a router that doesn't intercept DNS (e.g., UniFi, pfSense, OpenWrt)
-2. **Pi-hole DHCP** - Let Pi-hole handle DHCP, pushing itself as DNS directly to clients
-3. **Alternate port** - Run Pi-hole on port 5353 with client-side resolver config (complex)
+| 13 | Pi-hole DNS (LAN) | ✅ Done | MikroTik pushes Pi-hole as DNS (2026-01-20) |
+| 14 | Pi-hole DNS (VPN) | ✅ Done | Works via 10.0.0.1 |
+| 15 | Ad-blocking (LAN) | ✅ Done | Pi-hole blocks ads network-wide |
+| 16 | Ad-blocking (VPN) | ✅ Done | Works when VPN active |
+| 17 | Local DNS names | ✅ Done | Pi-hole custom.list + /etc/hosts on Macs |
 
 ### Mini (Backup Hub)
 
@@ -77,33 +68,71 @@ Personal infrastructure-as-code for home network devices.
 | 4 | /etc/hosts entries | ✅ Done | NSA service names |
 | 5 | WireGuard client | ✅ Done | Split tunnel for DNS |
 | 6 | Docker (Colima) | ✅ Done | ~/docker/, Ansible managed |
-| 7 | PostgreSQL container | ✅ Done | Port 5432, PostgreSQL 16 |
+| 7 | PostgreSQL container | ✅ Done | Port 5432, PostGIS 16 |
 | 8 | DynamoDB Local container | ✅ Done | Port 8000, AWS emulator |
+| 9 | k6 load testing | ✅ Done | On-demand (profiles: tools) |
 
-### Router (Plusnet Hub Two)
+### Router (MikroTik hAP ax³)
 
 | # | Requirement | Status | Notes |
 |---|-------------|--------|-------|
 | 1 | DHCP server | ✅ Done | Pool 192.168.1.100-200 |
 | 2 | DHCP reservations | ✅ Done | NSA, Mini static IPs |
 | 3 | Port forward 51820 | ✅ Done | WireGuard VPN |
-| 4 | **DNS to Pi-hole** | ❌ Blocked | Router intercepts port 53 |
+| 4 | DNS to Pi-hole | ✅ Done | Pi-hole primary, 1.1.1.1 fallback |
+| 5 | PPPoE (Plusnet) | ✅ Done | Replaced Plusnet Hub Two |
+| 6 | SSH access | ✅ Done | `ssh admin@mkt` |
+| 7 | WiFi (2.4/5GHz) | ✅ Done | WPA2/WPA3-PSK |
+| 8 | Guest WiFi | ✅ Done | SSID: guestexpress |
+| 9 | Ansible managed | ✅ Done | `ansible-playbook mkt.yml` |
 
 ---
 
 ## Network
 
-### Defaults
+### Topology
+
+```
+                            INTERNET (Plusnet ISP)
+                                    │
+                                    ▼
+┌───────────────────────────────────────────────────────────────────┐
+│                    ROUTER (MikroTik hAP ax³)                      │
+│                         192.168.1.1                               │
+│  WAN: PPPoE │ LAN: 192.168.1.0/24 │ WiFi: 2.4/5GHz + Guest       │
+│  DHCP: 192.168.1.100-200 │ DNS: Pi-hole + 1.1.1.1 fallback       │
+└───────────────────────────────────────────────────────────────────┘
+         │                    │                    │
+         ▼                    ▼                    ▼
+┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
+│      NSA        │  │      Mini       │  │    MB4/iOS      │
+│  192.168.1.183  │  │  192.168.1.116  │  │   DHCP Pool     │
+│                 │  │                 │  │                 │
+│  Pi-hole DNS    │  │  Syncthing      │  │  Syncthing      │
+│  Docker         │  │  iCloud Backup  │  │  WireGuard      │
+│  WireGuard VPN  │  │                 │  │                 │
+│  Home Assistant │  └─────────────────┘  └─────────────────┘
+│  Plex, nginx    │
+└─────────────────┘
+         │
+         │ WireGuard VPN (10.0.0.0/24)
+         ▼
+┌─────────────────┐
+│  Remote Clients │
+│  10.0.0.2-254   │
+└─────────────────┘
+```
+
+### Settings
 
 | Setting | Value |
 |---------|-------|
 | LAN Subnet | 192.168.1.0/24 |
-| Gateway | 192.168.1.254 |
-| ISP DNS | 212.159.13.49, 212.159.6.9 |
-| Pi-hole DNS | 192.168.1.183 |
+| Gateway | 192.168.1.1 (MikroTik) |
+| DNS Primary | 192.168.1.183 (Pi-hole) |
+| DNS Fallback | 1.1.1.1 (Cloudflare) |
 | VPN Subnet | 10.0.0.0/24 |
-| WAN | FTTX 1000 Mbps |
-| WAN IP | Static (81.174.139.34) |
+| WAN | Plusnet FTTX 1000 Mbps |
 
 ### Static IPs (DHCP Reservations)
 
@@ -111,7 +140,7 @@ Personal infrastructure-as-code for home network devices.
 |--------|-----|-----|
 | NSA | 192.168.1.183 | 7c:83:34:b2:c1:33 |
 | Mini | 192.168.1.116 | 14:98:77:78:d6:46 |
-| Router | 192.168.1.254 | - |
+| Router | 192.168.1.1 | 04:f4:1c:d1:38:84 |
 
 ### VPN Addresses (WireGuard)
 
@@ -122,6 +151,22 @@ Personal infrastructure-as-code for home network devices.
 | MB4 | 10.0.0.3 |
 | Mini | 10.0.0.4 |
 
+### DNS Resolution
+
+All DNS queries go through Pi-hole for ad-blocking and local name resolution.
+
+**Local DNS Records (Pi-hole custom.list):**
+```
+192.168.1.183  nsa ha pihole plex laya hopo etc
+192.168.1.116  mini
+```
+
+**Service Discovery:**
+| Method | Format | Accessible From |
+|--------|--------|-----------------|
+| Pi-hole DNS | `nsa`, `ha`, `mini` | LAN + VPN |
+| mDNS/Avahi | `nsa.local`, `mini.local` | LAN only |
+
 ## Connection Matrix
 
 ### Services (from LAN or VPN)
@@ -129,7 +174,7 @@ Personal infrastructure-as-code for home network devices.
 | Port | Service | URL | Access |
 |------|---------|-----|--------|
 | 22 | SSH | `ssh richardbell@nsa` | LAN + VPN |
-| 53 | Pi-hole DNS | - | ⚠️ VPN split only (router blocks LAN) |
+| 53 | Pi-hole DNS | - | LAN + VPN |
 | 80 | nginx | http://laya, http://hopo, http://etc | LAN + VPN |
 | 443 | Pi-hole Admin | https://pihole/admin | LAN + VPN |
 | 1883 | MQTT | - | LAN + VPN |
@@ -200,6 +245,7 @@ ansible-playbook site.yml
 ansible-playbook nsa.yml
 ansible-playbook mini.yml
 ansible-playbook mb4.yml
+ansible-playbook mkt.yml
 
 # Dry run
 ansible-playbook site.yml --check --diff
@@ -210,6 +256,8 @@ ansible-playbook nsa.yml --tags pihole
 ansible-playbook nsa.yml --tags plex
 ansible-playbook mini.yml --tags icloud-backup
 ansible-playbook mb4.yml --tags docker
+ansible-playbook mkt.yml --tags dhcp
+ansible-playbook mkt.yml --tags wifi
 ```
 
 ## Secrets (Ansible Vault)
@@ -254,6 +302,10 @@ ansible-vault rekey vault.yml
 | vault_plex_claim | Plex setup token |
 | vault_macos_ssh_key | Mac SSH key |
 | vault_ssh_authorized_keys | SSH public keys |
+| vault_mikrotik_admin_password | Router admin |
+| vault_mikrotik_pppoe_username/password | ISP credentials |
+| vault_mikrotik_wifi_ssid/password | Main WiFi |
+| vault_mikrotik_guest_ssid/password | Guest WiFi |
 
 ## Testing
 
@@ -263,6 +315,9 @@ ansible-vault rekey vault.yml
 
 # Full test suite (~2-3 minutes)
 ./tests/run-all.sh
+
+# MikroTik router tests only
+./tests/test-mkt.sh
 ```
 
 See `tests/README.md` for details.
@@ -271,9 +326,11 @@ See `tests/README.md` for details.
 
 | Date | Test | Result | Notes |
 |------|------|--------|-------|
+| 2026-01-20 | Pi-hole DNS from LAN | ✅ Pass | `dig @192.168.1.183 google.com` works |
+| 2026-01-20 | MikroTik Ansible tests | ✅ Pass | 25/25 tests passed |
+| 2026-01-20 | Guest WiFi | ✅ Pass | SSID guestexpress working |
 | 2026-01-16 | WireGuard split tunnel DNS | ✅ Pass | `dig @10.0.0.1 google.com` resolves correctly |
 | 2026-01-16 | Pi-hole ad-blocking via VPN | ✅ Pass | `ads.google.com` → `0.0.0.0` (blocked) |
-| 2026-01-16 | NSA services via VPN | ✅ Pass | All services accessible from MB4 |
 
 ## NSA Server Baseline
 
@@ -290,7 +347,7 @@ Before running Ansible, NSA needs:
 | Port | Protocol | Service | Access |
 |------|----------|---------|--------|
 | 22 | TCP | SSH | LAN + VPN |
-| 53 | TCP/UDP | DNS (Pi-hole) | VPN split only (router blocks LAN) |
+| 53 | TCP/UDP | DNS (Pi-hole) | LAN + VPN |
 | 80 | TCP | HTTP (nginx) | LAN + VPN |
 | 443 | TCP | Pi-hole Admin (HTTPS) | LAN + VPN |
 | 1883 | TCP | MQTT | LAN + VPN |
@@ -325,6 +382,7 @@ Before running Ansible, NSA needs:
 | Docker compose | ~/docker/docker-compose.yml |
 | PostgreSQL data | ~/docker/postgres/data/ |
 | DynamoDB data | ~/docker/dynamodb/data/ |
+| k6 scripts | ~/docker/k6/scripts/ |
 | Environment | ~/docker/.env |
 
 ## NSA Storage Architecture

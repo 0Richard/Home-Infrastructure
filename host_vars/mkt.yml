@@ -1,0 +1,78 @@
+# =============================================================================
+# mkt - Host Variables (MikroTik hAP ax³ Router)
+# =============================================================================
+
+# Router identity
+router_identity: mkt
+
+# LAN Configuration
+lan_ip: 192.168.1.1
+lan_netmask: 24
+lan_network: 192.168.1.0/24
+
+# Bridge configuration (use existing default bridge)
+bridge_name: bridge
+bridge_ports:
+  - ether2
+  - ether3
+  - ether4
+  - ether5
+  - wifi1
+  - wifi2
+
+# DHCP Server
+dhcp_pool_name: dhcp-lan
+dhcp_pool_start: 192.168.1.100
+dhcp_pool_end: 192.168.1.200
+dhcp_lease_time: 1d
+dhcp_gateway: "{{ lan_ip }}"
+dhcp_dns_servers:
+  - 192.168.1.183  # Pi-hole (primary)
+  - 1.1.1.1        # Cloudflare (fallback)
+
+# Static DHCP leases
+dhcp_static_leases:
+  - name: nsa
+    mac: "7C:83:34:B2:C1:33"
+    ip: 192.168.1.183
+    comment: "Debian server"
+  - name: mini
+    mac: "14:98:77:78:D6:46"
+    ip: 192.168.1.116
+    comment: "Mac Mini M1"
+
+# PPPoE WAN (ether1)
+pppoe_interface: pppoe-plusnet
+pppoe_physical_interface: ether1
+pppoe_service_name: ""
+
+# Port forwards (NAT dst-nat)
+port_forwards:
+  - name: wireguard
+    protocol: udp
+    dst_port: 51820
+    to_address: 192.168.1.183
+    to_port: 51820
+    comment: "WireGuard VPN to NSA"
+
+# WiFi configuration
+wifi_mode: ap
+wifi_security_profile: default
+wifi_country: united kingdom
+wifi_channel_2ghz: auto
+wifi_channel_5ghz: auto
+
+# Guest WiFi (isolated from main network)
+guest_wifi_enabled: true
+
+# Services to enable/disable
+services_enabled:
+  - ssh
+  - www-ssl
+services_disabled:
+  - telnet
+  - ftp
+  - www
+  - api
+  - api-ssl
+  - winbox

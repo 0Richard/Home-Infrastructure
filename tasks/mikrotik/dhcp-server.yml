@@ -1,0 +1,28 @@
+# =============================================================================
+# MikroTik DHCP Server Configuration
+# =============================================================================
+
+- name: Configure DHCP pool
+  community.routeros.command:
+    commands:
+      - :if ([/ip pool find name="{{ dhcp_pool_name }}"] = "") do={ /ip pool add name="{{ dhcp_pool_name }}" ranges="{{ dhcp_pool_start }}-{{ dhcp_pool_end }}" } else={ /ip pool set [find name="{{ dhcp_pool_name }}"] ranges="{{ dhcp_pool_start }}-{{ dhcp_pool_end }}" }
+  changed_when: false
+
+- name: Configure DHCP network options
+  community.routeros.command:
+    commands:
+      - :if ([/ip dhcp-server network find address="{{ lan_network }}"] = "") do={ /ip dhcp-server network add address="{{ lan_network }}" gateway="{{ dhcp_gateway }}" dns-server="{{ dhcp_dns_servers | join(',') }}" } else={ /ip dhcp-server network set [find address="{{ lan_network }}"] gateway="{{ dhcp_gateway }}" dns-server="{{ dhcp_dns_servers | join(',') }}" }
+  changed_when: false
+
+- name: Configure DHCP server
+  community.routeros.command:
+    commands:
+      - :if ([/ip dhcp-server find name="dhcp-lan"] = "") do={ /ip dhcp-server add name="dhcp-lan" interface="{{ bridge_name }}" address-pool="{{ dhcp_pool_name }}" lease-time="{{ dhcp_lease_time }}" disabled=no } else={ /ip dhcp-server set [find name="dhcp-lan"] interface="{{ bridge_name }}" address-pool="{{ dhcp_pool_name }}" lease-time="{{ dhcp_lease_time }}" disabled=no }
+  changed_when: false
+
+- name: Configure static DHCP leases
+  community.routeros.command:
+    commands:
+      - :if ([/ip dhcp-server lease find mac-address="{{ item.mac }}"] = "") do={ /ip dhcp-server lease add mac-address="{{ item.mac }}" address="{{ item.ip }}" comment="{{ item.comment | default(item.name) }}" } else={ /ip dhcp-server lease set [find mac-address="{{ item.mac }}"] address="{{ item.ip }}" comment="{{ item.comment | default(item.name) }}" }
+  loop: "{{ dhcp_static_leases }}"
+  changed_when: false

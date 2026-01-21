@@ -16,3 +16,6 @@
 
 - name: Configure mb4
   import_playbook: mb4.yml
+
+- name: Configure MikroTik router
+  import_playbook: mkt.yml

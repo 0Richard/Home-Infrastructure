@@ -80,6 +80,7 @@ tasks/                      # Reusable task modules
     ├── firewall-nat.yml    # NAT masquerade, port forwards
     ├── firewall-filter.yml # Input/forward chain rules
     ├── wifi.yml            # WiFi config
+    ├── guest-network.yml   # Guest isolation (192.168.10.0/24)
     └── services.yml        # Enable/disable services
 
 files/nsa/                  # Static config files deployed to NSA
@@ -157,12 +158,14 @@ Key variables in `vault.yml`:
 ## Network
 
 - LAN IPv4: `192.168.1.0/24`, Gateway: `192.168.1.1` (MikroTik hAP ax³)
+- Guest IPv4: `192.168.10.0/24`, Gateway: `192.168.10.1` (isolated, public DNS)
 - LAN IPv6: `fd7a:94b4:f195:7248::/64`
 - VPN: `10.0.0.0/24` (WireGuard on NSA)
-- DNS: Pi-hole at `192.168.1.183:53` (primary), 1.1.1.1 (fallback)
+- DNS: Pi-hole at `192.168.1.183:53` (LAN), 1.1.1.1/8.8.8.8 (guest)
 - mDNS: Avahi for `.local` resolution (e.g., `nsa.local`)
 - Router: MikroTik hAP ax³ (replaced Plusnet Hub Two on 2026-01-20)
 - All services accessible from LAN or VPN only (except WireGuard port 51820)
+- Guest network isolated: can reach internet, blocked from LAN (192.168.1.0/24)
 
 ## Known Issues
 
@@ -182,6 +185,7 @@ Key variables in `vault.yml`:
 
 | Date | Test | Result |
 |------|------|--------|
+| 2026-01-21 | Guest WiFi isolation | ✅ Pass - Internet works, LAN blocked (192.168.1.x unreachable) |
 | 2026-01-21 | WireGuard full tunnel (mobile) | ✅ Pass - ping 10.0.0.1, http://ha:8123, https://pihole/admin |
 | 2026-01-21 | Pi-hole DNS (LAN) | ✅ Pass - All hostnames resolve via 192.168.1.183 |
 | 2026-01-20 | MikroTik Ansible (25 tests) | ✅ Pass - `./tests/test-mkt.sh` |

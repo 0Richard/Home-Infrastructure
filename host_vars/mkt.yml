@@ -64,6 +64,16 @@ wifi_channel_5ghz: auto
 
 # Guest WiFi (isolated from main network)
 guest_wifi_enabled: true
+guest_bridge_name: bridge-guest
+guest_network: 192.168.10.0/24
+guest_gateway: 192.168.10.1
+guest_pool_name: pool-guest
+guest_pool_start: 192.168.10.100
+guest_pool_end: 192.168.10.200
+guest_lease_time: 8h
+guest_dns_servers:
+  - 1.1.1.1        # Cloudflare
+  - 8.8.8.8        # Google
 
 # Services to enable/disable
 services_enabled:

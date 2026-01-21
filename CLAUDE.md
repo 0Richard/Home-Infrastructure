@@ -111,15 +111,20 @@ docs/                       # Documentation
 
 ## NSA Services
 
-| Service | Port | URL | Notes |
-|---------|------|-----|-------|
-| Home Assistant | 8123 | http://ha.local:8123 | Smart home |
-| Pi-hole Admin | 443 | https://pihole.local/admin | HTTPS (v6), LAN + VPN |
-| Plex | 32400 | http://plex.local:32400/web | Media server |
-| nginx | 80 | http://laya.local, http://hopo.local | Static sites |
-| Cockpit | 9090 | https://nsa.local:9090 | Server admin |
-| Mosquitto | 1883 | - | MQTT broker |
-| WireGuard | 51820 | - | VPN (external) |
+**URLs that work on both LAN and VPN** (use short hostnames, not `.local`):
+
+| Service | Port | LAN & VPN URL | LAN-only (.local) |
+|---------|------|---------------|-------------------|
+| Home Assistant | 8123 | http://ha:8123 | http://ha.local:8123 |
+| Pi-hole Admin | 443 | https://pihole/admin | https://pihole.local/admin |
+| Plex | 32400 | http://plex:32400/web | http://plex.local:32400/web |
+| Cockpit | 9090 | https://nsa:9090 | https://nsa.local:9090 |
+| nginx (laya) | 8080 | http://laya:8080 | http://laya.local:8080 |
+| nginx (hopo) | 8080 | http://hopo:8080 | http://hopo.local:8080 |
+| Mosquitto | 1883 | - | - |
+| WireGuard | 51820 | - | - |
+
+**Note:** `.local` URLs use mDNS (Avahi) which only works on LAN. Short hostnames (e.g., `ha`, `pihole`) are resolved by Pi-hole DNS and work over both LAN and WireGuard VPN.
 
 ## NSA Storage
 
@@ -163,13 +168,13 @@ Key variables in `vault.yml`:
 
 | Issue | Status | Notes |
 |-------|--------|-------|
-| Pi-hole DNS not responding | 🔴 Active | DNS queries to 192.168.1.183 timeout; container shows healthy but FTL not responding. Restart container to temporarily fix. |
 | iCloud Private Relay incompatible | ℹ️ Info | Guest WiFi shows "not compatible with Private Relay" - expected for IPv4-only networks. |
 
 ## Resolved Issues
 
 | Issue | Resolution | Date |
 |-------|------------|------|
+| Pi-hole DNS not working on Mac | Removed legacy `/etc/hosts` entries (10.0.0.1) that were overriding Pi-hole DNS. Pi-hole now handles local hostnames. | 2026-01-21 |
 | Network issues (browsers/NSA failing) | Removed duplicate `bridge-lan` - must use existing `bridge` (defconf). Set `bridge_name: bridge` in host_vars/mkt.yml. | 2026-01-20 |
 | Browsers not loading (curl works) | Added MSS clamping for PPPoE (MTU 1492). Without it, large TCP packets (TLS handshakes) fail silently. | 2026-01-20 |
 
@@ -177,6 +182,8 @@ Key variables in `vault.yml`:
 
 | Date | Test | Result |
 |------|------|--------|
+| 2026-01-21 | WireGuard full tunnel (mobile) | ✅ Pass - ping 10.0.0.1, http://ha:8123, https://pihole/admin |
+| 2026-01-21 | Pi-hole DNS (LAN) | ✅ Pass - All hostnames resolve via 192.168.1.183 |
 | 2026-01-20 | MikroTik Ansible (25 tests) | ✅ Pass - `./tests/test-mkt.sh` |
 | 2026-01-20 | Guest WiFi connection | ✅ Pass - SSID `guestexpress` working |
 | 2026-01-20 | WiFi PMF (management-protection) | ✅ Pass - Apple security warning resolved |

@@ -157,10 +157,11 @@ Key variables in `vault.yml`:
 
 ## Network
 
+- WAN: `81.174.139.34` (static IP from Plusnet)
 - LAN IPv4: `192.168.1.0/24`, Gateway: `192.168.1.1` (MikroTik hAP ax³)
 - Guest IPv4: `192.168.10.0/24`, Gateway: `192.168.10.1` (isolated, public DNS)
 - LAN IPv6: `fd7a:94b4:f195:7248::/64`
-- VPN: `10.0.0.0/24` (WireGuard on NSA)
+- VPN: `10.0.0.0/24` (WireGuard on NSA, endpoint: 81.174.139.34:51820)
 - DNS: Pi-hole at `192.168.1.183:53` (LAN), 1.1.1.1/8.8.8.8 (guest)
 - mDNS: Avahi for `.local` resolution (e.g., `nsa.local`)
 - Router: MikroTik hAP ax³ (replaced Plusnet Hub Two on 2026-01-20)

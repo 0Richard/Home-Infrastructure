@@ -158,13 +158,14 @@ Personal infrastructure-as-code for home network devices.
 
 | Setting | Value |
 |---------|-------|
+| WAN IP | 81.174.139.34 (static) |
 | LAN Subnet | 192.168.1.0/24 |
 | Guest Subnet | 192.168.10.0/24 (isolated) |
 | Gateway | 192.168.1.1 (MikroTik) |
 | DNS Primary | 192.168.1.183 (Pi-hole) |
 | DNS Fallback | 1.1.1.1 (Cloudflare) |
 | VPN Subnet | 10.0.0.0/24 |
-| WAN | Plusnet FTTC (static IP) |
+| ISP | Plusnet FTTC |
 
 ### Static IPs (DHCP Reservations)
 

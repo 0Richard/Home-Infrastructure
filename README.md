@@ -54,7 +54,7 @@ Personal infrastructure-as-code for home network devices.
 | NSA | Home server | Docker, VPN, DNS, Media, MQTT, Zigbee, Syncthing, Cockpit |
 | Mini | Dev server / Backup hub | Syncthing, iCloud backup |
 | MB4 | Daily workstation | Syncthing, Docker (Colima) |
-| iOS | Mobile | Syncthing |
+| iOS | Mobile | Syncthing, WireGuard VPN |
 | Router | Network gateway | PPPoE, DHCP, WiFi, Guest VLAN, Firewall |
 
 ---
@@ -68,7 +68,7 @@ Personal infrastructure-as-code for home network devices.
 | 1 | SSH access from LAN | ✅ Done | Port 22, key-only auth |
 | 2 | SSH access from VPN | ✅ Done | Via WireGuard tunnel |
 | 3 | Docker containers running | ✅ Done | 7 containers: Pi-hole, Home Assistant, Plex, nginx, Mosquitto, Zigbee2MQTT, ntopng |
-| 4 | WireGuard VPN server | ✅ Done | Port 51820, 2 peers configured |
+| 4 | WireGuard VPN server | ✅ Done | Port 51820, 3 peers configured (MB4, Mini, iOS) |
 | 5 | Home Assistant accessible | ✅ Done | Port 8123 |
 | 6 | Plex media server | ✅ Done | Port 32400 |
 | 7 | Cockpit admin panel | ✅ Done | Port 9090 |
@@ -365,6 +365,7 @@ See `tests/README.md` for details.
 
 | Date | Test | Result | Notes |
 |------|------|--------|-------|
+| 2026-01-21 | iOS WireGuard VPN | ✅ Pass | 10.0.0.2, Pi-hole/Plex accessible from mobile |
 | 2026-01-21 | Guest network isolation | ✅ Pass | 192.168.10.x, internet works, LAN blocked |
 | 2026-01-21 | WireGuard full tunnel | ✅ Pass | Remote access to ha, pihole, plex |
 | 2026-01-21 | Tests via VPN | ✅ Pass | 25/25 MikroTik tests from offsite |

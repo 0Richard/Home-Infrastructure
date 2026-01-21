@@ -19,6 +19,7 @@
   loop:
     - postgres/data
     - dynamodb/data
+    - k6/scripts
 
 - name: Deploy docker-compose.yml
   copy:

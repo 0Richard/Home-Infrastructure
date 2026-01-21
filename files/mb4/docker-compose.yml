@@ -13,13 +13,13 @@
 
 services:
   # ---------------------------------------------------------------------------
-  # PostgreSQL - Local development database
+  # PostgreSQL with PostGIS - Local development database
   # Access: localhost:5432
   # Data: ./postgres/data/
   # ---------------------------------------------------------------------------
   postgres:
     container_name: postgres
-    image: postgres:16-alpine
+    image: imresamu/postgis:16-3.4-alpine
     ports:
       - "5432:5432"
     environment:
@@ -55,3 +55,16 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # ---------------------------------------------------------------------------
+  # k6 - Load testing tool
+  # Usage: docker compose run --rm k6 run /scripts/test.js
+  # Scripts: ./k6/scripts/
+  # ---------------------------------------------------------------------------
+  k6:
+    container_name: k6
+    image: grafana/k6:latest
+    volumes:
+      - ./k6/scripts:/scripts
+    profiles:
+      - tools

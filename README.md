@@ -4,7 +4,7 @@ Personal infrastructure-as-code for home network devices.
 
 ## Executive Summary
 
-**4 Devices** managed via Ansible:
+**Four Devices** managed via Ansible:
 
 | Device | Role | Key Services |
 |--------|------|--------------|
@@ -13,7 +13,7 @@ Personal infrastructure-as-code for home network devices.
 | **Mini** (Mac) | Backup hub | Syncthing, iCloud backup |
 | **MB4** (Mac) | Workstation | Syncthing, Docker dev environment |
 
-**3 Networks:**
+**Three  Networks:** managed via Ansible:
 
 | Network | Subnet | Purpose |
 |---------|--------|---------|
@@ -21,7 +21,7 @@ Personal infrastructure-as-code for home network devices.
 | Guest | 192.168.10.0/24 | Isolated, public DNS (1.1.1.1) |
 | VPN | 10.0.0.0/24 | WireGuard remote access |
 
-**Quick Access (LAN & VPN):**
+**Seven Services (LAN & VPN):** managed via Ansible:
 
 | Service | URL |
 |---------|-----|
@@ -29,6 +29,10 @@ Personal infrastructure-as-code for home network devices.
 | Pi-hole Admin | https://pihole/admin |
 | Plex | http://plex:32400/web |
 | Cockpit | https://nsa:9090 |
+|nginx Sites | http://laya, http://hopo, etc |
+| SSH | ssh richardbell@nsa |
+|Syncthing| ~/Sync/ folder sync |
+
 
 ---
 

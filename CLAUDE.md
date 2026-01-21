@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Personal infrastructure-as-code (Ansible) managing a home network with four devices:
 
-- **NSA** (`192.168.1.183`): Debian 13 home server running Docker containers (Pi-hole, Home Assistant, Plex, WireGuard, nginx, Mosquitto, Zigbee2MQTT) + Cockpit web admin
+- **NSA** (`192.168.1.183`): Debian 13 home server running Docker containers (Pi-hole, Home Assistant, Plex, WireGuard, nginx, Mosquitto, Zigbee2MQTT, ntopng) + Cockpit web admin
 - **Mini** (`192.168.1.116`): Mac Mini M1 for Syncthing and iCloud backup
 - **MB4**: MacBook Pro M4 workstation with Syncthing and Docker (Colima) for local dev
 - **MKT** (`192.168.1.1`): MikroTik hAP ax³ router (PPPoE WAN, DHCP, firewall, WiFi)
@@ -35,7 +35,7 @@ ansible-playbook mb4.yml --tags docker   # Set up Colima + dev containers
 ansible-playbook mkt.yml --tags dhcp     # DHCP server config
 ansible-playbook mkt.yml --tags firewall # NAT and filter rules
 
-# Available tags: common, ssh, cockpit, avahi, docker, colima, nftables, pihole, wireguard, syncthing, backup, plex, homebrew, icloud-backup, mackup, hosts, dns, identity, bridge, network, ip, pppoe, wan, dhcp, nat, filter, wifi, wireless, services, security
+# Available tags: common, ssh, cockpit, avahi, docker, colima, nftables, pihole, wireguard, syncthing, backup, plex, homebrew, icloud-backup, mackup, hosts, dns, identity, bridge, network, ip, pppoe, wan, dhcp, nat, filter, wifi, wireless, services, security, traffic-flow, monitoring
 
 # Vault operations
 ansible-vault view vault.yml
@@ -81,6 +81,7 @@ tasks/                      # Reusable task modules
     ├── firewall-filter.yml # Input/forward chain rules
     ├── wifi.yml            # WiFi config
     ├── guest-network.yml   # Guest isolation (192.168.10.0/24)
+    ├── traffic-flow.yml    # NetFlow export to ntopng
     └── services.yml        # Enable/disable services
 
 files/nsa/                  # Static config files deployed to NSA
@@ -122,6 +123,7 @@ docs/                       # Documentation
 | Cockpit | 9090 | https://nsa:9090 | https://nsa.local:9090 |
 | nginx (laya) | 8080 | http://laya:8080 | http://laya.local:8080 |
 | nginx (hopo) | 8080 | http://hopo:8080 | http://hopo.local:8080 |
+| ntopng | 3000 | http://nsa:3000 | http://nsa.local:3000 |
 | Mosquitto | 1883 | - | - |
 | WireGuard | 51820 | - | - |
 
@@ -140,6 +142,7 @@ Key paths:
 - `/srv/docker/` - Docker Compose and configs (NVMe)
 - `/mnt/data/media/` - Plex library (SATA)
 - `/mnt/data/backups/` - Docker backup archives (SATA)
+- `/mnt/data/ntopng/` - Network traffic data, 30 day retention (SATA)
 
 ## Vault
 

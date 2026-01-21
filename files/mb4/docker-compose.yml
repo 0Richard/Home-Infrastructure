@@ -68,3 +68,37 @@ services:
       - ./k6/scripts:/scripts
     profiles:
       - tools
+
+  # ---------------------------------------------------------------------------
+  # Nmap - Network scanner for penetration testing
+  # Usage: docker compose run --rm nmap -sV 192.168.1.0/24
+  # Reports: ./nmap/reports/
+  # ---------------------------------------------------------------------------
+  nmap:
+    container_name: nmap
+    image: instrumentisto/nmap:latest
+    volumes:
+      - ./nmap/reports:/reports
+    network_mode: host
+    profiles:
+      - security
+
+  # ---------------------------------------------------------------------------
+  # OpenVAS/Greenbone - Open-source vulnerability scanner
+  # Access: https://localhost:9392
+  # Default login: admin / admin (change on first login)
+  # Data: ./openvas/data/
+  # Note: First start takes 10-15 min to sync vulnerability feeds
+  # ---------------------------------------------------------------------------
+  openvas:
+    container_name: openvas
+    image: immauss/openvas:latest
+    ports:
+      - "9392:9392"
+    environment:
+      - PASSWORD=admin
+    volumes:
+      - ./openvas/data:/data
+    restart: unless-stopped
+    profiles:
+      - security

@@ -89,6 +89,14 @@
     - data
     - log
 
+- name: Create ntopng data directory (SATA SSD)
+  file:
+    path: /mnt/data/ntopng
+    state: directory
+    owner: root
+    group: docker
+    mode: '0775'
+
 - name: Deploy docker-compose.yml
   copy:
     src: files/nsa/docker-compose.yml

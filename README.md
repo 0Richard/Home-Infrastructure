@@ -8,7 +8,7 @@ Personal infrastructure-as-code for home network devices.
 
 | Device | Role | Key Services |
 |--------|------|--------------|
-| **NSA** (Debian) | Home server | Pi-hole DNS, Home Assistant, Plex, WireGuard VPN, Zigbee |
+| **NSA** (Debian) | Home server | Pi-hole DNS, Home Assistant, Plex, WireGuard VPN, Zigbee, ntopng |
 | **MKT** (MikroTik) | Router | PPPoE WAN, DHCP, WiFi, Guest network |
 | **Mini** (Mac) | Backup hub | Syncthing, iCloud backup |
 | **MB4** (Mac) | Workstation | Syncthing, Docker dev environment |
@@ -29,9 +29,10 @@ Personal infrastructure-as-code for home network devices.
 | Pi-hole Admin | https://pihole/admin |
 | Plex | http://plex:32400/web |
 | Cockpit | https://nsa:9090 |
-|nginx Sites | http://laya, http://hopo, etc |
+| ntopng | http://nsa:3000 |
+| nginx Sites | http://laya, http://hopo, etc |
 | SSH | ssh richardbell@nsa |
-|Syncthing| ~/Sync/ folder sync |
+| Syncthing | ~/Sync/ folder sync |
 
 
 ---
@@ -66,7 +67,7 @@ Personal infrastructure-as-code for home network devices.
 |---|-------------|--------|-------|
 | 1 | SSH access from LAN | ✅ Done | Port 22, key-only auth |
 | 2 | SSH access from VPN | ✅ Done | Via WireGuard tunnel |
-| 3 | Docker containers running | ✅ Done | 6 containers: Pi-hole, Home Assistant, Plex, nginx, Mosquitto, Zigbee2MQTT |
+| 3 | Docker containers running | ✅ Done | 7 containers: Pi-hole, Home Assistant, Plex, nginx, Mosquitto, Zigbee2MQTT, ntopng |
 | 4 | WireGuard VPN server | ✅ Done | Port 51820, 2 peers configured |
 | 5 | Home Assistant accessible | ✅ Done | Port 8123 |
 | 6 | Plex media server | ✅ Done | Port 32400 |
@@ -218,6 +219,7 @@ All DNS queries go through Pi-hole for ad-blocking and local name resolution.
 | 8123 | Home Assistant | http://ha:8123 | LAN + VPN |
 | 9090 | Cockpit | https://nsa:9090 | LAN + VPN |
 | 32400 | Plex | http://plex:32400/web | LAN + VPN |
+| 3000 | ntopng | http://nsa:3000 | LAN + VPN |
 | 51820 | WireGuard | - | Anywhere |
 
 ### VPN Remote Access (when on conflicting 192.168.1.x network)
@@ -394,6 +396,7 @@ Before running Ansible, NSA needs:
 | 8123 | TCP | Home Assistant | LAN + VPN |
 | 9090 | TCP | Cockpit | LAN + VPN |
 | 32400 | TCP | Plex | LAN + VPN |
+| 3000 | TCP | ntopng | LAN + VPN |
 | 51820 | UDP | WireGuard | Anywhere |
 
 ## File Locations
@@ -451,6 +454,7 @@ NSA has a two-tier storage setup balancing speed and capacity:
 |------|----------|----------|
 | `/mnt/data/media/` | Plex library (movies, TV, music) | Large files, sequential reads |
 | `/mnt/data/backups/` | Docker backup archives | Weekly writes, large files |
+| `/mnt/data/ntopng/` | Network traffic data (30 day retention) | Moderate writes, searchable |
 | `/mnt/data/transcode/` | Plex transcoding temp | Can be slow, disposable |
 | `/mnt/data/downloads/` | Staging area for new media | Temporary storage |
 

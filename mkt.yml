@@ -72,6 +72,12 @@
       tags: [guest, wifi, wireless]
 
     # =========================================================================
+    # TRAFFIC FLOW (NetFlow to ntopng)
+    # =========================================================================
+    - import_tasks: tasks/mikrotik/traffic-flow.yml
+      tags: [traffic-flow, monitoring]
+
+    # =========================================================================
     # SERVICES
     # =========================================================================
     - import_tasks: tasks/mikrotik/services.yml

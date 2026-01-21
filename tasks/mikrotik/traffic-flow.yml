@@ -1,0 +1,23 @@
+# =============================================================================
+# MikroTik Traffic Flow - NetFlow export to ntopng
+# =============================================================================
+# Exports network flow data to ntopng on NSA for traffic analysis
+# =============================================================================
+
+- name: Configure traffic flow target (ntopng on NSA)
+  community.routeros.command:
+    commands:
+      - >-
+        :if ([:len [/ip traffic-flow target find where dst-address="{{ nsa_ip }}"]] = 0) do={
+          /ip traffic-flow target add dst-address={{ nsa_ip }} port=2055 version=9
+        } else={
+          /ip traffic-flow target set [find where dst-address="{{ nsa_ip }}"] port=2055 version=9
+        }
+  changed_when: false
+
+- name: Enable traffic flow on LAN and guest interfaces
+  community.routeros.command:
+    commands:
+      - >-
+        /ip traffic-flow set enabled=yes interfaces={{ bridge_name }},{{ guest_bridge_name }} active-flow-timeout=1m inactive-flow-timeout=15s
+  changed_when: false

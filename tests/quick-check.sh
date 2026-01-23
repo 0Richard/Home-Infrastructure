@@ -17,7 +17,7 @@ echo "=========================="
 
 # SSH
 printf "SSH........... "
-if ssh -o ConnectTimeout=3 -o BatchMode=yes richard@$NSA_IP "echo ok" &>/dev/null; then
+if ssh -o ConnectTimeout=3 -o BatchMode=yes richardbell@$NSA_IP "echo ok" &>/dev/null; then
     echo -e "${GREEN}OK${NC}"
 else
     echo -e "${RED}FAIL${NC}"
@@ -33,7 +33,7 @@ fi
 
 # Docker
 printf "Docker........ "
-CONTAINERS=$(ssh -o ConnectTimeout=3 richard@$NSA_IP "docker ps -q 2>/dev/null | wc -l" 2>/dev/null)
+CONTAINERS=$(ssh -o ConnectTimeout=3 richardbell@$NSA_IP "docker ps -q 2>/dev/null | wc -l" 2>/dev/null)
 if [ "$CONTAINERS" -gt 0 ]; then
     echo -e "${GREEN}OK${NC} ($CONTAINERS containers)"
 else
@@ -48,17 +48,17 @@ else
     echo -e "${RED}FAIL${NC}"
 fi
 
-# Pi-hole
+# Pi-hole (v6 uses HTTPS on 443)
 printf "Pi-hole....... "
-if curl -s --connect-timeout 3 "http://$NSA_IP:8080/admin/" | grep -qi pi-hole 2>/dev/null; then
+if curl -skL --connect-timeout 3 "https://$NSA_IP/admin/" | grep -qi "pi-hole" 2>/dev/null; then
     echo -e "${GREEN}OK${NC}"
 else
     echo -e "${RED}FAIL${NC}"
 fi
 
-# Plex
-printf "Plex...... "
-if curl -s --connect-timeout 3 "http://$NSA_IP:32400" | grep -qi plex 2>/dev/null; then
+# Plex (returns 401 but that means it's running)
+printf "Plex.......... "
+if curl -s --connect-timeout 3 -o /dev/null -w "%{http_code}" "http://$NSA_IP:32400" | grep -qE "200|401" 2>/dev/null; then
     echo -e "${GREEN}OK${NC}"
 else
     echo -e "${RED}FAIL${NC}"

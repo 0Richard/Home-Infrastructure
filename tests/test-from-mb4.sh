@@ -1,12 +1,10 @@
 #!/bin/bash
 # =============================================================================
-# Infrastructure Tests - Run from Mac
+# Infrastructure Tests - Run from MB4 (workstation)
 # =============================================================================
 # Tests remote connectivity to NSA server and services
-# Run: ./tests/test-from-mac.sh
+# Run: ./tests/test-from-mb4.sh
 # =============================================================================
-
-set -e
 
 # Colors
 RED='\033[0;31m'
@@ -50,11 +48,11 @@ check_network() {
 test_ssh() {
     section "SSH Connectivity"
     
-    # SSH as richard
-    if ssh -o ConnectTimeout=5 -o BatchMode=yes richard@$NSA_IP "echo ok" &>/dev/null; then
-        pass "SSH as richard@$NSA_IP"
+    # SSH as richardbell
+    if ssh -o ConnectTimeout=5 -o BatchMode=yes richardbell@$NSA_IP "echo ok" &>/dev/null; then
+        pass "SSH as richardbell@$NSA_IP"
     else
-        fail "SSH as richard@$NSA_IP"
+        fail "SSH as richardbell@$NSA_IP"
     fi
     
     # SSH as root
@@ -65,7 +63,7 @@ test_ssh() {
     fi
     
     # SSH via hostname (requires DNS)
-    if ssh -o ConnectTimeout=5 -o BatchMode=yes richard@$NSA_HOST "echo ok" &>/dev/null; then
+    if ssh -o ConnectTimeout=5 -o BatchMode=yes richardbell@$NSA_HOST "echo ok" &>/dev/null; then
         pass "SSH via hostname ($NSA_HOST)"
     else
         skip "SSH via hostname (DNS not configured)"
@@ -133,25 +131,25 @@ test_services() {
         fail "Home Assistant (port 8123)"
     fi
     
-    # Pi-hole Admin
-    if curl -s --connect-timeout 5 "http://$NSA_IP:8080/admin/" | grep -qi "pi-hole" 2>/dev/null; then
-        pass "Pi-hole Admin (port 8080)"
+    # Pi-hole Admin (v6 uses HTTPS on 443)
+    if curl -skL --connect-timeout 5 "https://$NSA_IP/admin/" | grep -qi "pi-hole" 2>/dev/null; then
+        pass "Pi-hole Admin (HTTPS 443)"
     else
-        fail "Pi-hole Admin (port 8080)"
+        fail "Pi-hole Admin (HTTPS 443)"
     fi
     
-    # Plex
-    if curl -s --connect-timeout 5 "http://$NSA_IP:32400" | grep -qi "plex" 2>/dev/null; then
+    # Plex (returns 401 but that means it's running)
+    if curl -s --connect-timeout 5 -o /dev/null -w "%{http_code}" "http://$NSA_IP:32400" | grep -qE "200|401" 2>/dev/null; then
         pass "Plex (port 32400)"
     else
         fail "Plex (port 32400)"
     fi
     
-    # nginx (check if responding)
-    if curl -s --connect-timeout 5 -o /dev/null -w "%{http_code}" "http://$NSA_IP:80" | grep -qE "200|404"; then
-        pass "nginx (port 80)"
+    # nginx (on port 8080, port 80 is Pi-hole)
+    if curl -s --connect-timeout 5 -o /dev/null -w "%{http_code}" "http://$NSA_IP:8080" | grep -qE "200|404"; then
+        pass "nginx (port 8080)"
     else
-        fail "nginx (port 80)"
+        fail "nginx (port 8080)"
     fi
     
     # Cockpit
@@ -173,9 +171,9 @@ test_ports() {
     local ports=(
         "22:SSH"
         "53:DNS"
-        "80:HTTP"
+        "80:Pi-hole"
         "1883:MQTT"
-        "8080:Pi-hole"
+        "8080:nginx"
         "32400:Plex"
         "8123:HomeAssistant"
         "9090:Cockpit"
@@ -205,7 +203,7 @@ test_ports() {
 # =============================================================================
 main() {
     echo "============================================="
-    echo "Infrastructure Tests - From Mac"
+    echo "Infrastructure Tests - From MB4"
     echo "============================================="
     echo "Started: $(date)"
     echo ""

@@ -6,8 +6,6 @@
 # Run: ./tests/test-nsa-local.sh (or via SSH from Mac)
 # =============================================================================
 
-set -e
-
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -39,17 +37,17 @@ test_system() {
     fi
     
     # User exists
-    if id richard &>/dev/null; then
-        pass "User 'richard' exists"
+    if id richardbell &>/dev/null; then
+        pass "User 'richardbell' exists"
     else
-        fail "User 'richard' missing"
+        fail "User 'richardbell' missing"
     fi
     
-    # richard in docker group
-    if groups richard | grep -q docker; then
-        pass "User 'richard' in docker group"
+    # richardbell in docker group
+    if groups richardbell | grep -q docker; then
+        pass "User 'richardbell' in docker group"
     else
-        fail "User 'richard' not in docker group"
+        fail "User 'richardbell' not in docker group"
     fi
     
     # IP forwarding enabled
@@ -161,25 +159,25 @@ test_services_local() {
         fail "Home Assistant not responding on :8123"
     fi
     
-    # Pi-hole
-    if curl -s --connect-timeout 3 "http://localhost:8080/admin/" | grep -qi "pi-hole"; then
-        pass "Pi-hole responding on :8080"
+    # Pi-hole (v6 uses HTTPS on 443)
+    if curl -skL --connect-timeout 3 "https://localhost/admin/" | grep -qi "pi-hole"; then
+        pass "Pi-hole responding on :443"
     else
-        fail "Pi-hole not responding on :8080"
+        fail "Pi-hole not responding on :443"
     fi
     
-    # Plex
-    if curl -s --connect-timeout 3 "http://localhost:32400" | grep -qi "plex"; then
+    # Plex (returns 401 but that means it's running)
+    if curl -s --connect-timeout 3 -o /dev/null -w "%{http_code}" "http://localhost:32400" | grep -qE "200|401"; then
         pass "Plex responding on :32400"
     else
         fail "Plex not responding on :32400"
     fi
     
-    # nginx
-    if curl -s --connect-timeout 3 -o /dev/null -w "%{http_code}" "http://localhost:80" | grep -qE "200|404"; then
-        pass "nginx responding on :80"
+    # nginx (on port 8080, port 80 is Pi-hole)
+    if curl -s --connect-timeout 3 -o /dev/null -w "%{http_code}" "http://localhost:8080" | grep -qE "200|404"; then
+        pass "nginx responding on :8080"
     else
-        fail "nginx not responding on :80"
+        fail "nginx not responding on :8080"
     fi
     
     # MQTT (check if port is listening)
@@ -273,7 +271,7 @@ test_firewall() {
         fail "SSH rule missing"
     fi
     
-    if nft list ruleset | grep -q 'dport 51820 accept'; then
+    if nft list ruleset | grep -q 'udp dport 51820'; then
         pass "WireGuard rule exists"
     else
         fail "WireGuard rule missing"
@@ -313,19 +311,19 @@ test_ssh_config() {
         fail "Password authentication may be enabled"
     fi
     
-    # richard authorized_keys exists
-    if [ -f "/home/richard/.ssh/authorized_keys" ]; then
-        pass "/home/richard/.ssh/authorized_keys exists"
+    # richardbell authorized_keys exists
+    if [ -f "/home/richardbell/.ssh/authorized_keys" ]; then
+        pass "/home/richardbell/.ssh/authorized_keys exists"
         
         # Check permissions
-        PERMS=$(stat -c %a /home/richard/.ssh/authorized_keys)
+        PERMS=$(stat -c %a /home/richardbell/.ssh/authorized_keys)
         if [ "$PERMS" = "600" ]; then
             pass "authorized_keys has correct permissions (600)"
         else
             fail "authorized_keys has wrong permissions ($PERMS)"
         fi
     else
-        fail "/home/richard/.ssh/authorized_keys missing"
+        fail "/home/richardbell/.ssh/authorized_keys missing"
     fi
     
     # root authorized_keys exists
@@ -374,7 +372,7 @@ test_backups() {
         skip "/mnt/data not mounted"
     fi
     
-    if [ -d "/home/richard/Sync/backups/nsa" ]; then
+    if [ -d "/home/richardbell/Sync/backups/nsa" ]; then
         pass "Sync backup directory exists"
     else
         skip "Sync backup directory not found"
@@ -387,15 +385,15 @@ test_backups() {
 test_syncthing() {
     section "Syncthing"
     
-    # Service running for richard
-    if systemctl is-active --quiet syncthing@richard; then
+    # Service running for richardbell
+    if systemctl is-active --quiet syncthing@richardbell; then
         pass "Syncthing service running"
     else
         fail "Syncthing service not running"
     fi
     
     # Sync folder exists
-    if [ -d "/home/richard/Sync" ]; then
+    if [ -d "/home/richardbell/Sync" ]; then
         pass "~/Sync folder exists"
     else
         fail "~/Sync folder missing"

@@ -16,18 +16,18 @@ Comprehensive tests to verify infrastructure is working correctly.
 
 | Script | Run From | Purpose |
 |--------|----------|---------|
-| `quick-check.sh` | Mac | Fast smoke test (~30s) |
-| `run-all.sh` | Mac | Full suite orchestrator |
-| `test-from-mac.sh` | Mac | Tests remote connectivity |
+| `quick-check.sh` | MB4 | Fast smoke test (~30s) |
+| `run-all.sh` | MB4 | Full suite orchestrator |
+| `test-from-mb4.sh` | MB4 | Tests remote connectivity |
 | `test-nsa-local.sh` | NSA | Tests local services |
 
 ## What's Tested
 
-### From Mac (`test-from-mac.sh`)
+### From MB4 (`test-from-mb4.sh`)
 
 | Category | Tests |
 |----------|-------|
-| SSH | richard@nsa, root@nsa, hostname resolution |
+| SSH | richardbell@nsa, root@nsa, hostname resolution |
 | VPN | WireGuard interface, ping gateway |
 | DNS | Local hostnames (ha, laya, pihole, etc), external forwarding |
 | Services | Home Assistant, Pi-hole, Plex, nginx, Cockpit |
@@ -57,8 +57,8 @@ Comprehensive tests to verify infrastructure is working correctly.
 # Run full suite
 ./tests/run-all.sh
 
-# Run only Mac tests
-./tests/test-from-mac.sh
+# Run only MB4 tests
+./tests/test-from-mb4.sh
 
 # Run NSA tests directly (when SSH'd to NSA)
 sudo ./tests/test-nsa-local.sh

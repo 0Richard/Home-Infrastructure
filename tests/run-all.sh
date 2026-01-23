@@ -41,13 +41,13 @@ echo ""
 # Phase 1: Local Tests (from Mac)
 # =============================================================================
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${BLUE}Phase 1: Tests from Mac${NC}"
+echo -e "${BLUE}Phase 1: Tests from MB4${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
-if [ -f "$SCRIPT_DIR/test-from-mac.sh" ]; then
-    "$SCRIPT_DIR/test-from-mac.sh" || MAC_FAILED=1
+if [ -f "$SCRIPT_DIR/test-from-mb4.sh" ]; then
+    "$SCRIPT_DIR/test-from-mb4.sh" || MAC_FAILED=1
 else
-    echo -e "${RED}ERROR: test-from-mac.sh not found${NC}"
+    echo -e "${RED}ERROR: test-from-mb4.sh not found${NC}"
     MAC_FAILED=1
 fi
 
@@ -94,8 +94,8 @@ echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 if [ -n "$MAC_FAILED" ] || [ -n "$NSA_FAILED" ] || [ -n "$MKT_FAILED" ]; then
-    [ -n "$MAC_FAILED" ] && echo -e "${RED}✗ Mac tests: FAILED${NC}"
-    [ -z "$MAC_FAILED" ] && echo -e "${GREEN}✓ Mac tests: PASSED${NC}"
+    [ -n "$MAC_FAILED" ] && echo -e "${RED}✗ MB4 tests: FAILED${NC}"
+    [ -z "$MAC_FAILED" ] && echo -e "${GREEN}✓ MB4 tests: PASSED${NC}"
     [ -n "$NSA_FAILED" ] && echo -e "${RED}✗ NSA tests: FAILED${NC}"
     [ -z "$NSA_FAILED" ] && echo -e "${GREEN}✓ NSA tests: PASSED${NC}"
     [ -n "$MKT_FAILED" ] && echo -e "${RED}✗ MikroTik tests: FAILED${NC}"
@@ -104,7 +104,7 @@ if [ -n "$MAC_FAILED" ] || [ -n "$NSA_FAILED" ] || [ -n "$MKT_FAILED" ]; then
     echo -e "${RED}Some tests failed!${NC}"
     exit 1
 else
-    echo -e "${GREEN}✓ Mac tests: PASSED${NC}"
+    echo -e "${GREEN}✓ MB4 tests: PASSED${NC}"
     echo -e "${GREEN}✓ NSA tests: PASSED${NC}"
     echo -e "${GREEN}✓ MikroTik tests: PASSED${NC}"
     echo ""

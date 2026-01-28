@@ -16,6 +16,8 @@
   tasks:
     - import_tasks: tasks/common.yml
     - import_tasks: tasks/ssh.yml
+    - import_tasks: tasks/power-macos.yml
+      tags: power
     - import_tasks: tasks/homebrew.yml
       tags: homebrew
     - import_tasks: tasks/syncthing-macos.yml

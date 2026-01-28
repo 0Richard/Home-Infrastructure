@@ -42,8 +42,8 @@ Personal infrastructure-as-code for home network devices.
 | Device | Hostname | Type | Chip | RAM | Storage | OS |
 |--------|----------|------|------|-----|---------|-----|
 | NSA | nsa | Beelink SEi8 | Intel i3-8109U | 16GB DDR4 | 238GB NVMe + 1TB SATA | Debian 13 |
-| Mac Mini | mini | Mac Mini | Apple M1 | 8GB | 256GB | macOS 15 |
-| MacBook Pro | mb4 | MacBook Pro 14" | Apple M4 | 48GB | 512GB | macOS 15 |
+| Mac Mini | mini | Mac Mini | Apple M1 | 16GB | 256GB | macOS 15 |
+| MacBook Pro | mb4 | MacBook Pro 14" | Apple M4 | 36GB | 512GB | macOS 15 |
 | iPhone | ios | iPhone 17 Pro Max | A18 Pro | - | 512GB | iOS 18 |
 | Router | mkt | MikroTik hAP ax³ | ARM64 | 1GB | 128MB | RouterOS 7.19.6 |
 

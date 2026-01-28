@@ -1,0 +1,36 @@
+# =============================================================================
+# macOS Power Management Tasks
+# =============================================================================
+# Prevent sleep and ensure always-on availability for server Macs
+# =============================================================================
+
+- name: Disable system sleep (server mode)
+  command: pmset -a sleep 0
+  tags: power
+
+- name: Disable display sleep
+  command: pmset -a displaysleep 0
+  tags: power
+
+- name: Disable disk sleep
+  command: pmset -a disksleep 0
+  tags: power
+
+- name: Enable Wake on LAN
+  command: pmset -a womp 1
+  tags: power
+
+- name: Disable Power Nap (prevents unexpected wake activities)
+  command: pmset -a powernap 0
+  tags: power
+
+- name: Verify power settings
+  command: pmset -g
+  register: pmset_output
+  changed_when: false
+  tags: power
+
+- name: Show power settings
+  debug:
+    var: pmset_output.stdout_lines
+  tags: power

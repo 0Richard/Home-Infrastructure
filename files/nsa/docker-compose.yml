@@ -124,15 +124,23 @@ services:
   # Access: http://plex:32400/web or http://192.168.1.183:32400/web
   # Media: /mnt/data/media/ (movies, tv, music)
   # Note: Requires Plex account for initial setup
+  # Hardware transcoding: Intel Quick Sync via /dev/dri (i3-8109U)
   # ---------------------------------------------------------------------------
   plex:
     container_name: plex
     image: plexinc/pms-docker:latest
     ports:
-      - "32400:32400"
+      - "32400:32400"                  # Main Plex port
+      - "32410-32414:32410-32414/udp"  # GDM network discovery
+      - "32469:32469"                  # DLNA server
+    devices:
+      - /dev/dri:/dev/dri  # Intel Quick Sync for hardware transcoding
+    group_add:
+      - "992"  # render group for GPU access
     environment:
       - TZ=Europe/London
       - PLEX_CLAIM=${PLEX_CLAIM:-}  # Optional: claim token from plex.tv/claim
+      - ADVERTISE_IP=http://192.168.1.183:32400/  # Help clients find server on LAN
     volumes:
       - ./plex/config:/config
       - ./plex/transcode:/transcode

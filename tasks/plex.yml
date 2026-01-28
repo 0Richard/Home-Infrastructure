@@ -29,22 +29,82 @@
     - music
   tags: plex
 
+- name: Check if Plex Preferences.xml exists
+  stat:
+    path: /srv/docker/plex/config/Library/Application Support/Plex Media Server/Preferences.xml
+  register: plex_prefs
+  tags: plex
+
+- name: Configure Plex hardware transcoding (Intel Quick Sync)
+  shell: |
+    PREFS="/srv/docker/plex/config/Library/Application Support/Plex Media Server/Preferences.xml"
+    # Add HardwareAcceleratedCodecs if not present
+    if ! grep -q 'HardwareAcceleratedCodecs=' "$PREFS"; then
+      sed -i 's|/>$| HardwareAcceleratedCodecs="1"/>|' "$PREFS"
+    else
+      sed -i 's|HardwareAcceleratedCodecs="[^"]*"|HardwareAcceleratedCodecs="1"|' "$PREFS"
+    fi
+    # Add HardwareAcceleratedEncoders if not present
+    if ! grep -q 'HardwareAcceleratedEncoders=' "$PREFS"; then
+      sed -i 's|/>$| HardwareAcceleratedEncoders="1"/>|' "$PREFS"
+    else
+      sed -i 's|HardwareAcceleratedEncoders="[^"]*"|HardwareAcceleratedEncoders="1"|' "$PREFS"
+    fi
+  when: plex_prefs.stat.exists
+  register: plex_hw_config
+  changed_when: true
+  notify: Restart plex container
+  tags: plex
+
+- name: Configure Plex DLNA server
+  shell: |
+    PREFS="/srv/docker/plex/config/Library/Application Support/Plex Media Server/Preferences.xml"
+    if ! grep -q 'DlnaEnabled=' "$PREFS"; then
+      sed -i 's|/>$| DlnaEnabled="1"/>|' "$PREFS"
+    else
+      sed -i 's|DlnaEnabled="[^"]*"|DlnaEnabled="1"|' "$PREFS"
+    fi
+  when: plex_prefs.stat.exists
+  register: plex_dlna_config
+  changed_when: true
+  notify: Restart plex container
+  tags: plex
+
+- name: Configure Plex secure connections (Preferred for LAN)
+  shell: |
+    PREFS="/srv/docker/plex/config/Library/Application Support/Plex Media Server/Preferences.xml"
+    # secureConnections: 0=Preferred, 1=Required, 2=Disabled
+    if ! grep -q 'secureConnections=' "$PREFS"; then
+      sed -i 's|/>$| secureConnections="0"/>|' "$PREFS"
+    else
+      sed -i 's|secureConnections="[^"]*"|secureConnections="0"|' "$PREFS"
+    fi
+  when: plex_prefs.stat.exists
+  register: plex_secure_config
+  changed_when: true
+  notify: Restart plex container
+  tags: plex
+
 - name: Reminder about media library
   debug:
     msg: |
       Plex media directories created at /mnt/data/media/
-      
+
       Folder structure:
         /mnt/data/media/movies/Movie Name (2024)/Movie Name (2024).mkv
         /mnt/data/media/tv/Show Name/Season 01/Show Name S01E01.mkv
         /mnt/data/media/music/Artist/Album/01 - Track.mp3
-      
+
       Access Plex: http://192.168.1.183:32400/web
-      
+
+      Settings managed by Ansible:
+        - Hardware transcoding: Intel Quick Sync (i3-8109U)
+        - DLNA server: Enabled
+
       First-time setup:
         1. Get claim token from https://plex.tv/claim
         2. Add to /srv/docker/.env as PLEX_CLAIM=claim-xxxxx
         3. Run: docker compose up -d plex
-      
-      Note: Requires 1TB SATA SSD mounted at /mnt/data
+
+      Note: Requires Plex Pass for hardware transcoding
   tags: plex

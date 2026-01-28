@@ -112,6 +112,11 @@
       args:
         chdir: /srv/docker
 
+    - name: Restart plex container
+      command: docker compose restart plex
+      args:
+        chdir: /srv/docker
+
     - name: Restart dnsmasq
       service:
         name: dnsmasq

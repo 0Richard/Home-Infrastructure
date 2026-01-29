@@ -51,19 +51,18 @@
   tags: [power, autologin]
 
 - name: Generate kcpassword for auto-login
-  script:
-    cmd: |
-      python3 -c "
-      import sys, os
-      password = sys.argv[1]
-      key = [0x7D, 0x89, 0x52, 0x23, 0xD2, 0xBC, 0xDD, 0xEA, 0xA3, 0xB9, 0x1F]
-      pwd_bytes = password.encode('utf-8') + b'\x00'
-      while len(pwd_bytes) % 12:
-          pwd_bytes += b'\x00'
-      result = bytearray(b ^ key[i % len(key)] for i, b in enumerate(pwd_bytes))
-      with open('/etc/kcpassword', 'wb') as f:
-          f.write(result)
-      os.chmod('/etc/kcpassword', 0o600)
-      " "{{ vault_mini_login_password }}"
+  shell: |
+    python3 -c "
+    import sys, os
+    password = sys.argv[1]
+    key = [0x7D, 0x89, 0x52, 0x23, 0xD2, 0xBC, 0xDD, 0xEA, 0xA3, 0xB9, 0x1F]
+    pwd_bytes = password.encode('utf-8') + b'\x00'
+    while len(pwd_bytes) % 12:
+        pwd_bytes += b'\x00'
+    result = bytearray(b ^ key[i % len(key)] for i, b in enumerate(pwd_bytes))
+    with open('/etc/kcpassword', 'wb') as f:
+        f.write(result)
+    os.chmod('/etc/kcpassword', 0o600)
+    " "{{ vault_mini_login_password }}"
   tags: [power, autologin]
   no_log: true

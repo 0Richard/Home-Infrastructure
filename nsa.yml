@@ -97,6 +97,12 @@
       service:
         name: nftables
         state: reloaded
+      notify: Restart docker service
+
+    - name: Restart docker service
+      service:
+        name: docker
+        state: restarted
 
     - name: Restart wireguard
       service:

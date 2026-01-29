@@ -155,12 +155,18 @@ services:
   moltbot-gateway:
     container_name: moltbot-gateway
     image: ghcr.io/moltbot/clawdbot:main
+    command: >
+      sh -c '
+        mkdir -p /home/node/.clawdbot &&
+        echo "{\"gateway\":{\"bind\":\"lan\"}}" > /home/node/.clawdbot/clawdbot.json &&
+        exec node dist/index.js gateway --allow-unconfigured
+      '
     ports:
       - "18789:18789"
     environment:
       - TZ=Europe/London
       - OLLAMA_HOST=http://192.168.1.116:11434
-      - MOLTBOT_TOKEN=${MOLTBOT_TOKEN:-}
+      - CLAWDBOT_GATEWAY_TOKEN=${MOLTBOT_TOKEN:-}
     restart: unless-stopped
 
   moltbot-cli:

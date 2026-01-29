@@ -27,19 +27,19 @@ services:
     network_mode: host  # Required for device discovery (mDNS, SSDP)
 
   # ---------------------------------------------------------------------------
-  # NGINX - Web server for static sites
-  # Access: http://laya:8080, http://hopo:8080 (via Pi-hole DNS)
-  # Sites: ./nginx/sites/{laya,hopo,etc}/
-  # Note: Port 80 used by Pi-hole, nginx uses 8080
+  # NGINX - Reverse proxy for all browser services
+  # Access: http://hostname or https://moltbot (via Pi-hole DNS)
+  # Proxies: HA, Pi-hole, Plex, Cockpit, Moltbot, ntopng
+  # Static sites: laya, hopo, etc
   # ---------------------------------------------------------------------------
   nginx:
     container_name: nginx
     image: nginx:latest
+    network_mode: host
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/sites:/usr/share/nginx/sites:ro
-    ports:
-      - "8080:80"
+      - ./nginx/ssl:/etc/nginx/ssl:ro
     restart: unless-stopped
 
   # ---------------------------------------------------------------------------
@@ -79,8 +79,9 @@ services:
 
   # ---------------------------------------------------------------------------
   # Pi-hole v6 - DNS + Ad blocking + DHCP
-  # Access: https://pihole.local/admin or https://192.168.1.183/admin
+  # Access: http://pihole/admin (via nginx proxy) or http://192.168.1.183:8081/admin
   # Replaces dnsmasq for DNS
+  # Web UI on port 8081 (port 80 used by nginx proxy)
   # Uses host networking (bridge mode has iptables/nftables conflict)
   # ---------------------------------------------------------------------------
   pihole:
@@ -90,6 +91,7 @@ services:
     environment:
       TZ: Europe/London
       FTLCONF_webserver_api_password: ${PIHOLE_PASSWORD:-changeme}
+      FTLCONF_webserver_port: "8081"
       FTLCONF_dns_upstreams: 1.1.1.1;8.8.8.8
       FTLCONF_dns_listeningMode: all
     volumes:

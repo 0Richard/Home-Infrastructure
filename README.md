@@ -21,16 +21,17 @@ Personal infrastructure-as-code for home network devices.
 | Guest | 192.168.10.0/24 | Isolated, public DNS (1.1.1.1) |
 | VPN | 10.0.0.0/24 | WireGuard remote access |
 
-**Seven Services (LAN & VPN):** managed via Ansible:
+**Services (LAN & VPN):** all via nginx reverse proxy — no port numbers:
 
 | Service | URL |
 |---------|-----|
-| Home Assistant | http://ha:8123 |
-| Pi-hole Admin | https://pihole/admin |
-| Plex | https://plex:32400/web |
-| Cockpit | https://nsa:9090 |
-| ntopng | http://nsa:3000 |
-| nginx Sites | http://laya, http://hopo, etc |
+| Home Assistant | http://ha |
+| Pi-hole Admin | http://pihole/admin |
+| Plex | http://plex/web |
+| Cockpit | http://nsa |
+| Moltbot | https://moltbot |
+| ntopng | http://ntopng |
+| Static sites | http://laya, http://hopo |
 | SSH | ssh richardbell@nsa |
 | Syncthing | ~/Sync/ folder sync |
 
@@ -69,10 +70,10 @@ Personal infrastructure-as-code for home network devices.
 | 2 | SSH access from VPN | ✅ Done | Via WireGuard tunnel |
 | 3 | Docker containers running | ✅ Done | 8 containers: Pi-hole, Home Assistant, Plex, nginx, Mosquitto, Zigbee2MQTT, ntopng, Moltbot |
 | 4 | WireGuard VPN server | ✅ Done | Port 51820, 3 peers configured (MB4, Mini, iOS) |
-| 5 | Home Assistant accessible | ✅ Done | Port 8123 |
-| 6 | Plex media server | ✅ Done | Port 32400 |
-| 7 | Cockpit admin panel | ✅ Done | Port 9090 |
-| 8 | nginx static sites | ✅ Done | Port 80 (laya, hopo, etc) |
+| 5 | Home Assistant accessible | ✅ Done | http://ha (via nginx proxy) |
+| 6 | Plex media server | ✅ Done | http://plex (via nginx proxy) |
+| 7 | Cockpit admin panel | ✅ Done | http://nsa (via nginx proxy) |
+| 8 | nginx reverse proxy | ✅ Done | Port 80/443, all services via hostname |
 | 9 | MQTT broker | ✅ Done | Port 1883 |
 | 10 | Zigbee2MQTT | ✅ Done | Sonoff dongle connected |
 | 11 | Firewall (nftables) | ✅ Done | Default deny, explicit allow |
@@ -82,7 +83,7 @@ Personal infrastructure-as-code for home network devices.
 | 15 | Ad-blocking (LAN) | ✅ Done | Pi-hole blocks ads network-wide |
 | 16 | Ad-blocking (VPN) | ✅ Done | Works when VPN active |
 | 17 | Local DNS names | ✅ Done | Pi-hole custom.list + /etc/hosts on Macs |
-| 18 | Moltbot AI assistant | ✅ Done | Port 18789, LLM via Ollama on Mini |
+| 18 | Moltbot AI assistant | ✅ Done | https://moltbot (via nginx HTTPS proxy) |
 
 ### Mini (Backup Hub)
 
@@ -219,14 +220,10 @@ All DNS queries go through Pi-hole for ad-blocking and local name resolution.
 |------|---------|-----|--------|
 | 22 | SSH | `ssh richardbell@nsa` | LAN + VPN |
 | 53 | Pi-hole DNS | - | LAN + VPN |
-| 80 | nginx | http://laya, http://hopo, http://etc | LAN + VPN |
-| 443 | Pi-hole Admin | https://pihole/admin | LAN + VPN |
+| 80 | nginx proxy | http://ha, http://pihole, http://plex, etc | LAN + VPN |
+| 443 | nginx HTTPS | https://moltbot (self-signed cert) | LAN + VPN |
 | 1883 | MQTT | - | LAN + VPN |
-| 8123 | Home Assistant | http://ha:8123 | LAN + VPN |
-| 9090 | Cockpit | https://nsa:9090 | LAN + VPN |
-| 32400 | Plex | https://plex:32400/web | LAN + VPN |
-| 3000 | ntopng | http://nsa:3000 | LAN + VPN |
-| 18789 | Moltbot | http://moltbot:18789 | LAN + VPN |
+| 8081 | Pi-hole Admin | http://pihole/admin (via proxy) or direct | LAN + VPN |
 | 51820 | WireGuard | - | Anywhere |
 
 ### VPN Remote Access (when on conflicting 192.168.1.x network)
@@ -240,11 +237,13 @@ sudo sh -c 'echo "10.0.0.1  laya hopo etc ha plex pihole nsa" >> /etc/hosts'
 
 | Service | URL |
 |---------|-----|
-| laya/hopo/etc | http://laya, http://hopo, http://etc |
-| Home Assistant | http://ha:8123 |
-| Plex | https://plex:32400/web |
-| Pi-hole Admin | https://pihole/admin |
-| Cockpit | https://nsa:9090 |
+| Home Assistant | http://ha |
+| Plex | http://plex/web |
+| Pi-hole Admin | http://pihole/admin |
+| Cockpit | http://nsa |
+| Moltbot | https://moltbot |
+| ntopng | http://ntopng |
+| Static sites | http://laya, http://hopo |
 | SSH | ssh root@10.0.0.1 |
 
 ### SSH Access
@@ -501,7 +500,7 @@ NSA has a two-tier storage setup balancing speed and capacity:
 8. Restore Docker data from backup (see `docs/nsa-migration.md`)
 
 ### Recovery Access
-- Cockpit: https://192.168.1.183:9090
+- Cockpit: http://nsa (via nginx proxy) or https://192.168.1.183:9090 (direct)
 - Physical access to Beelink
 
 ## Conventions

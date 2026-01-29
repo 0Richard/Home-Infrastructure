@@ -1,0 +1,30 @@
+# =============================================================================
+# SSL Certificate Tasks
+# =============================================================================
+# Generate self-signed certificate for Moltbot HTTPS (WebSocket requires it)
+# Stored at /srv/docker/nginx/ssl/ on NSA
+# =============================================================================
+
+- name: Create nginx SSL directory
+  file:
+    path: /srv/docker/nginx/ssl
+    state: directory
+    mode: '0700'
+
+- name: Generate self-signed certificate for Moltbot
+  command: >
+    openssl req -x509 -nodes -days 3650 -newkey rsa:2048
+    -keyout /srv/docker/nginx/ssl/server.key
+    -out /srv/docker/nginx/ssl/server.crt
+    -subj "/CN=moltbot"
+    -addext "subjectAltName=DNS:moltbot,DNS:moltbot.local"
+  args:
+    creates: /srv/docker/nginx/ssl/server.crt
+
+- name: Set certificate file permissions
+  file:
+    path: "{{ item }}"
+    mode: '0600'
+  loop:
+    - /srv/docker/nginx/ssl/server.key
+    - /srv/docker/nginx/ssl/server.crt

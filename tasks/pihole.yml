@@ -23,10 +23,10 @@
     - etc-pihole
     - etc-dnsmasq.d
 
-- name: Deploy Pi-hole custom DNS entries
+- name: Deploy Pi-hole local DNS entries (dnsmasq format)
   copy:
-    src: files/nsa/pihole/custom.list
-    dest: "{{ docker_data_path }}/pihole/etc-pihole/custom.list"
+    src: files/nsa/pihole/05-local-dns.conf
+    dest: "{{ docker_data_path }}/pihole/etc-dnsmasq.d/05-local-dns.conf"
     owner: root
     group: docker
     mode: '0644'
@@ -45,5 +45,5 @@
       Pi-hole will use password from PIHOLE_PASSWORD environment variable.
       Set it in /srv/docker/.env or change via:
         docker exec -it pihole pihole -a -p
-      
-      Access Pi-hole admin: http://192.168.1.183:8080/admin
+
+      Access Pi-hole admin: http://pihole/admin

@@ -25,3 +25,13 @@
   systemd:
     name: cockpit
     enabled: yes
+
+- name: Configure Cockpit for nginx reverse proxy
+  copy:
+    dest: /etc/cockpit/cockpit.conf
+    content: |
+      [WebService]
+      Origins = http://nsa ws://nsa http://nsa.local ws://nsa.local
+      ProtocolHeader = X-Forwarded-Proto
+    mode: '0644'
+  notify: Restart cockpit

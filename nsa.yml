@@ -42,6 +42,12 @@
       tags: [avahi, mdns]
 
     # =========================================================================
+    # SSL CERTIFICATES
+    # =========================================================================
+    - import_tasks: tasks/ssl.yml
+      tags: [ssl, https]
+
+    # =========================================================================
     # DOCKER
     # =========================================================================
     - import_tasks: tasks/docker.yml
@@ -120,7 +126,7 @@
         state: restarted
 
     - name: Restart docker containers
-      command: docker compose restart
+      command: docker compose up -d
       args:
         chdir: /srv/docker
 
@@ -128,6 +134,11 @@
       command: docker compose restart plex
       args:
         chdir: /srv/docker
+
+    - name: Restart cockpit
+      service:
+        name: cockpit
+        state: restarted
 
     - name: Restart dnsmasq
       service:

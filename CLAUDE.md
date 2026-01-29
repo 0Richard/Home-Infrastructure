@@ -35,7 +35,7 @@ ansible-playbook mb4.yml --tags docker   # Set up Colima + dev containers
 ansible-playbook mkt.yml --tags dhcp     # DHCP server config
 ansible-playbook mkt.yml --tags firewall # NAT and filter rules
 
-# Available tags: common, ssh, cockpit, avahi, docker, colima, nftables, pihole, wireguard, syncthing, backup, plex, moltbot, ollama, power, autologin, homebrew, icloud-backup, mackup, hosts, dns, identity, bridge, network, ip, pppoe, wan, dhcp, nat, filter, wifi, wireless, services, security, traffic-flow, monitoring
+# Available tags: common, ssh, cockpit, avahi, docker, colima, ssl, https, nftables, pihole, wireguard, syncthing, backup, plex, moltbot, ollama, power, autologin, homebrew, icloud-backup, mackup, hosts, dns, identity, bridge, network, ip, pppoe, wan, dhcp, nat, filter, wifi, wireless, services, security, traffic-flow, monitoring
 
 # Vault operations
 ansible-vault view vault.yml
@@ -71,6 +71,7 @@ tasks/                      # Reusable task modules
 ├── mackup.yml              # App settings backup (macOS)
 ├── hosts-macos.yml         # /etc/hosts entries for NSA services
 ├── plex.yml                # Media server directories
+├── ssl.yml                 # Self-signed cert for Moltbot HTTPS
 ├── moltbot.yml             # Moltbot AI assistant directories
 ├── ollama.yml              # Ollama LLM server (Mini)
 └── mikrotik/               # MikroTik router tasks
@@ -89,7 +90,7 @@ tasks/                      # Reusable task modules
 files/nsa/                  # Static config files deployed to NSA
 ├── docker-compose.yml      # All Docker service definitions
 ├── nftables.conf           # Firewall rules (IPv4 + IPv6)
-├── nginx.conf              # Virtual hosts (laya, hopo, etc)
+├── nginx.conf              # Reverse proxy config (all services)
 ├── mosquitto.conf          # MQTT broker config
 └── pihole/custom.list      # Local DNS entries
 
@@ -117,20 +118,22 @@ docs/                       # Documentation
 
 **URLs that work on both LAN and VPN** (use short hostnames, not `.local`):
 
-| Service | Port | LAN & VPN URL | LAN-only (.local) |
-|---------|------|---------------|-------------------|
-| Home Assistant | 8123 | http://ha:8123 | http://ha.local:8123 |
-| Pi-hole Admin | 443 | https://pihole/admin | https://pihole.local/admin |
-| Plex | 32400 | https://plex:32400/web | https://plex.local:32400/web |
-| Cockpit | 9090 | https://nsa:9090 | https://nsa.local:9090 |
-| nginx (laya) | 8080 | http://laya:8080 | http://laya.local:8080 |
-| nginx (hopo) | 8080 | http://hopo:8080 | http://hopo.local:8080 |
-| ntopng | 3000 | http://nsa:3000 | http://nsa.local:3000 |
-| Moltbot | 18789 | http://moltbot:18789 | http://moltbot.local:18789 |
-| Mosquitto | 1883 | - | - |
-| WireGuard | 51820 | - | - |
+All browser services are accessible via nginx reverse proxy — no port numbers needed.
 
-**Note:** `.local` URLs use mDNS (Avahi) which only works on LAN. Short hostnames (e.g., `ha`, `pihole`) are resolved by Pi-hole DNS and work over both LAN and WireGuard VPN.
+| Service | URL | Notes |
+|---------|-----|-------|
+| Home Assistant | http://ha | WebSocket supported |
+| Pi-hole Admin | http://pihole/admin | Direct: http://192.168.1.183:8081/admin |
+| Plex | http://plex/web | |
+| Cockpit | http://nsa | Proxies to Cockpit HTTPS on 9090 |
+| Moltbot | https://moltbot | HTTPS required (WebSocket secure context) |
+| ntopng | http://ntopng | |
+| Laya | http://laya | Static site |
+| Hopo | http://hopo | Static site |
+| Mosquitto | - | Port 1883 (not browser) |
+| WireGuard | - | Port 51820 (not browser) |
+
+**Note:** Short hostnames (e.g., `ha`, `pihole`) are resolved by Pi-hole DNS and work over both LAN and WireGuard VPN. `.local` variants (e.g., `ha.local`) use mDNS (Avahi) and only work on LAN.
 
 ## NSA Storage
 
@@ -154,7 +157,7 @@ Password retrieved automatically from macOS Keychain via `~/.ansible/vault-pass.
 Key variables in `vault.yml`:
 - `vault_wireguard_private_key`, `vault_wireguard_peers` - VPN config
 - `vault_pihole_password` - Pi-hole admin
-- `vault_plex_claim` - Plex setup token (expires in 4 min, get from plex.tv/claim). Note: Plex requires HTTPS access (`https://plex:32400/web`)
+- `vault_plex_claim` - Plex setup token (expires in 4 min, get from plex.tv/claim)
 - `vault_ssh_authorized_keys` - SSH public keys
 - `vault_mikrotik_admin_password` - Router admin password
 - `vault_mikrotik_pppoe_username`, `vault_mikrotik_pppoe_password` - ISP credentials
@@ -180,9 +183,8 @@ Key variables in `vault.yml`:
 
 | Issue | Status | Notes |
 |-------|--------|-------|
-| Plex requires HTTPS | ⚠️ Active | Plex rejects plain HTTP (empty reply). Use `https://plex:32400/web` not `http://`. Bookmark and docs URLs must use HTTPS. |
 | VPN not connected on MB4 (LAN) | ℹ️ Info | WireGuard VPN shows disconnected when MB4 is on LAN — expected, not needed on home network. |
-| Moltbot not yet deployed | 📋 Pending | Config committed but `ansible-playbook nsa.yml --tags moltbot,docker,pihole,nftables` not yet run. `moltbot` DNS won't resolve until Pi-hole config is deployed. |
+| Moltbot self-signed cert | ℹ️ Info | `https://moltbot` uses self-signed cert. Browser shows warning on first visit — click "Proceed" once, then it's remembered. |
 | iCloud Private Relay incompatible | ℹ️ Info | Guest WiFi shows "not compatible with Private Relay" - expected for IPv4-only networks. |
 
 ## Resolved Issues

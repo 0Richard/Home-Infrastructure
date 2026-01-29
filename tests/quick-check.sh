@@ -3,6 +3,7 @@
 # Infrastructure Quick Check
 # =============================================================================
 # Fast smoke test - checks essential connectivity to all services
+# Tests through nginx reverse proxy using Host headers
 # Run: ./tests/quick-check.sh
 # =============================================================================
 
@@ -57,43 +58,50 @@ else
     check "Docker" ""
 fi
 
-# Home Assistant
-if curl -s --connect-timeout 3 -o /dev/null -w "%{http_code}" "http://$NSA_IP:8123" | grep -qE "200|302"; then
+# nginx proxy (port 80 - default server returns 404 for unknown hosts)
+if curl -s --connect-timeout 3 -o /dev/null -w "%{http_code}" "http://$NSA_IP" | grep -q "404"; then
+    check "nginx" "ok"
+else
+    check "nginx" ""
+fi
+
+# Home Assistant (via proxy: http://ha)
+if curl -s --connect-timeout 3 -H "Host: ha" -o /dev/null -w "%{http_code}" "http://$NSA_IP" | grep -qE "200|302"; then
     check "HomeAssistant" "ok"
 else
     check "HomeAssistant" ""
 fi
 
-# Pi-hole (v6 uses HTTPS on 443)
-if curl -skL --connect-timeout 3 "https://$NSA_IP/admin/" | grep -qi "pi-hole" 2>/dev/null; then
+# Pi-hole (via proxy: http://pihole/admin)
+if curl -sL --connect-timeout 3 -H "Host: pihole" "http://$NSA_IP/admin/" | grep -qi "pi-hole" 2>/dev/null; then
     check "Pi-hole" "ok"
 else
     check "Pi-hole" ""
 fi
 
-# Plex (HTTPS required - returns 200/302)
-if curl -sk --connect-timeout 3 -o /dev/null -w "%{http_code}" "https://$NSA_IP:32400/identity" | grep -qE "200|401"; then
+# Plex (via proxy: http://plex)
+if curl -s --connect-timeout 3 -H "Host: plex" -o /dev/null -w "%{http_code}" "http://$NSA_IP/identity" | grep -qE "200|302"; then
     check "Plex" "ok"
 else
-    check "Plex" "HTTPS not responding"
+    check "Plex" ""
 fi
 
-# Cockpit
-if curl -sk --connect-timeout 3 -o /dev/null -w "%{http_code}" "https://$NSA_IP:9090" | grep -q "200"; then
+# Cockpit (via proxy: http://nsa → proxies to https://127.0.0.1:9090)
+if curl -s --connect-timeout 3 -H "Host: nsa" -o /dev/null -w "%{http_code}" "http://$NSA_IP" | grep -q "200"; then
     check "Cockpit" "ok"
 else
     check "Cockpit" ""
 fi
 
-# ntopng
-if curl -s --connect-timeout 3 -o /dev/null -w "%{http_code}" "http://$NSA_IP:3000" | grep -qE "200|302"; then
+# ntopng (via proxy: http://ntopng)
+if curl -s --connect-timeout 3 -H "Host: ntopng" -o /dev/null -w "%{http_code}" "http://$NSA_IP" | grep -qE "200|302"; then
     check "ntopng" "ok"
 else
     check "ntopng" ""
 fi
 
-# Moltbot
-if curl -s --connect-timeout 3 -o /dev/null -w "%{http_code}" "http://$NSA_IP:18789" | grep -qE "200|302|404"; then
+# Moltbot (via proxy: https://moltbot - self-signed cert)
+if curl -sk --connect-timeout 3 -H "Host: moltbot" -o /dev/null -w "%{http_code}" "https://$NSA_IP" | grep -qE "200|302|404"; then
     check "Moltbot" "ok"
 else
     printf "%-16s" "Moltbot"
@@ -112,13 +120,6 @@ if dig +short @$NSA_IP ha 2>/dev/null | grep -q "192.168.1.183"; then
     check "DNS" "ok"
 else
     check "DNS" ""
-fi
-
-# nginx
-if curl -s --connect-timeout 3 -o /dev/null -w "%{http_code}" "http://$NSA_IP:8080" | grep -qE "200|404"; then
-    check "nginx" "ok"
-else
-    check "nginx" ""
 fi
 
 # Summary

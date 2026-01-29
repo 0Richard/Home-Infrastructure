@@ -121,7 +121,7 @@ docs/                       # Documentation
 |---------|------|---------------|-------------------|
 | Home Assistant | 8123 | http://ha:8123 | http://ha.local:8123 |
 | Pi-hole Admin | 443 | https://pihole/admin | https://pihole.local/admin |
-| Plex | 32400 | http://plex:32400/web | http://plex.local:32400/web |
+| Plex | 32400 | https://plex:32400/web | https://plex.local:32400/web |
 | Cockpit | 9090 | https://nsa:9090 | https://nsa.local:9090 |
 | nginx (laya) | 8080 | http://laya:8080 | http://laya.local:8080 |
 | nginx (hopo) | 8080 | http://hopo:8080 | http://hopo.local:8080 |
@@ -154,7 +154,7 @@ Password retrieved automatically from macOS Keychain via `~/.ansible/vault-pass.
 Key variables in `vault.yml`:
 - `vault_wireguard_private_key`, `vault_wireguard_peers` - VPN config
 - `vault_pihole_password` - Pi-hole admin
-- `vault_plex_claim` - Plex setup token (expires in 4 min, get from plex.tv/claim)
+- `vault_plex_claim` - Plex setup token (expires in 4 min, get from plex.tv/claim). Note: Plex requires HTTPS access (`https://plex:32400/web`)
 - `vault_ssh_authorized_keys` - SSH public keys
 - `vault_mikrotik_admin_password` - Router admin password
 - `vault_mikrotik_pppoe_username`, `vault_mikrotik_pppoe_password` - ISP credentials
@@ -179,6 +179,9 @@ Key variables in `vault.yml`:
 
 | Issue | Status | Notes |
 |-------|--------|-------|
+| Plex requires HTTPS | ⚠️ Active | Plex rejects plain HTTP (empty reply). Use `https://plex:32400/web` not `http://`. Bookmark and docs URLs must use HTTPS. |
+| VPN not connected on MB4 (LAN) | ℹ️ Info | WireGuard VPN shows disconnected when MB4 is on LAN — expected, not needed on home network. |
+| Moltbot not yet deployed | 📋 Pending | Config committed but `ansible-playbook nsa.yml --tags moltbot,docker,pihole,nftables` not yet run. `moltbot` DNS won't resolve until Pi-hole config is deployed. |
 | iCloud Private Relay incompatible | ℹ️ Info | Guest WiFi shows "not compatible with Private Relay" - expected for IPv4-only networks. |
 
 ## Resolved Issues
@@ -193,6 +196,10 @@ Key variables in `vault.yml`:
 
 | Date | Test | Result |
 |------|------|--------|
+| 2026-01-29 | Comprehensive network test | ✅ Pass - 9/9 DNS, 3/3 SSH, 8/8 HTTP services, Ollama LAN access |
+| 2026-01-29 | Plex HTTPS requirement | ⚠️ Note - HTTP returns empty reply, HTTPS works (302). Updated bookmarks to `https://` |
+| 2026-01-29 | Ollama LAN access | ✅ Pass - `http://192.168.1.116:11434/` responds, qwen2.5:14b available |
+| 2026-01-29 | MikroTik router health | ✅ Pass - RouterOS 7.19.6, uptime 9+ days, 2% CPU |
 | 2026-01-21 | Guest WiFi isolation | ✅ Pass - Internet works, LAN blocked (192.168.1.x unreachable) |
 | 2026-01-21 | WireGuard full tunnel (mobile) | ✅ Pass - ping 10.0.0.1, http://ha:8123, https://pihole/admin |
 | 2026-01-21 | Pi-hole DNS (LAN) | ✅ Pass - All hostnames resolve via 192.168.1.183 |

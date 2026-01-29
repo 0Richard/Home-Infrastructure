@@ -27,7 +27,7 @@ Personal infrastructure-as-code for home network devices.
 |---------|-----|
 | Home Assistant | http://ha:8123 |
 | Pi-hole Admin | https://pihole/admin |
-| Plex | http://plex:32400/web |
+| Plex | https://plex:32400/web |
 | Cockpit | https://nsa:9090 |
 | ntopng | http://nsa:3000 |
 | nginx Sites | http://laya, http://hopo, etc |
@@ -222,7 +222,7 @@ All DNS queries go through Pi-hole for ad-blocking and local name resolution.
 | 1883 | MQTT | - | LAN + VPN |
 | 8123 | Home Assistant | http://ha:8123 | LAN + VPN |
 | 9090 | Cockpit | https://nsa:9090 | LAN + VPN |
-| 32400 | Plex | http://plex:32400/web | LAN + VPN |
+| 32400 | Plex | https://plex:32400/web | LAN + VPN |
 | 3000 | ntopng | http://nsa:3000 | LAN + VPN |
 | 18789 | Moltbot | http://moltbot:18789 | LAN + VPN |
 | 51820 | WireGuard | - | Anywhere |
@@ -240,7 +240,7 @@ sudo sh -c 'echo "10.0.0.1  laya hopo etc ha plex pihole nsa" >> /etc/hosts'
 |---------|-----|
 | laya/hopo/etc | http://laya, http://hopo, http://etc |
 | Home Assistant | http://ha:8123 |
-| Plex | http://plex:32400/web |
+| Plex | https://plex:32400/web |
 | Pi-hole Admin | https://pihole/admin |
 | Cockpit | https://nsa:9090 |
 | SSH | ssh root@10.0.0.1 |
@@ -371,6 +371,9 @@ See `tests/README.md` for details.
 
 | Date | Test | Result | Notes |
 |------|------|--------|-------|
+| 2026-01-29 | Comprehensive LAN test | ✅ Pass | DNS (9/9), SSH (3/3), HTTP services (8/8), Ollama, MikroTik |
+| 2026-01-29 | Plex HTTPS requirement | ⚠️ Note | HTTP returns empty reply; HTTPS works. Bookmarks updated to `https://` |
+| 2026-01-29 | Ollama LAN access | ✅ Pass | `http://192.168.1.116:11434/` responds, qwen2.5:14b model loaded |
 | 2026-01-21 | iOS WireGuard VPN | ✅ Pass | 10.0.0.2, Pi-hole/Plex accessible from mobile |
 | 2026-01-21 | Guest network isolation | ✅ Pass | 192.168.10.x, internet works, LAN blocked |
 | 2026-01-21 | WireGuard full tunnel | ✅ Pass | Remote access to ha, pihole, plex |

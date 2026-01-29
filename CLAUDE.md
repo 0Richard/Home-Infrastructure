@@ -8,8 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Personal infrastructure-as-code (Ansible) managing a home network with four devices:
 
-- **NSA** (`192.168.1.183`): Debian 13 home server running Docker containers (Pi-hole, Home Assistant, Plex, WireGuard, nginx, Mosquitto, Zigbee2MQTT, ntopng) + Cockpit web admin
-- **Mini** (`192.168.1.116`): Mac Mini M1 for Syncthing and iCloud backup
+- **NSA** (`192.168.1.183`): Debian 13 home server running Docker containers (Pi-hole, Home Assistant, Plex, WireGuard, nginx, Mosquitto, Zigbee2MQTT, ntopng, Moltbot) + Cockpit web admin
+- **Mini** (`192.168.1.116`): Mac Mini M1 for Syncthing, iCloud backup, and Ollama LLM
 - **MB4**: MacBook Pro M4 workstation with Syncthing and Docker (Colima) for local dev
 - **MKT** (`192.168.1.1`): MikroTik hAP ax³ router (PPPoE WAN, DHCP, firewall, WiFi)
 
@@ -35,7 +35,7 @@ ansible-playbook mb4.yml --tags docker   # Set up Colima + dev containers
 ansible-playbook mkt.yml --tags dhcp     # DHCP server config
 ansible-playbook mkt.yml --tags firewall # NAT and filter rules
 
-# Available tags: common, ssh, cockpit, avahi, docker, colima, nftables, pihole, wireguard, syncthing, backup, plex, homebrew, icloud-backup, mackup, hosts, dns, identity, bridge, network, ip, pppoe, wan, dhcp, nat, filter, wifi, wireless, services, security, traffic-flow, monitoring
+# Available tags: common, ssh, cockpit, avahi, docker, colima, nftables, pihole, wireguard, syncthing, backup, plex, moltbot, ollama, homebrew, icloud-backup, mackup, hosts, dns, identity, bridge, network, ip, pppoe, wan, dhcp, nat, filter, wifi, wireless, services, security, traffic-flow, monitoring
 
 # Vault operations
 ansible-vault view vault.yml
@@ -71,6 +71,8 @@ tasks/                      # Reusable task modules
 ├── mackup.yml              # App settings backup (macOS)
 ├── hosts-macos.yml         # /etc/hosts entries for NSA services
 ├── plex.yml                # Media server directories
+├── moltbot.yml             # Moltbot AI assistant directories
+├── ollama.yml              # Ollama LLM server (Mini)
 └── mikrotik/               # MikroTik router tasks
     ├── identity.yml        # Router name
     ├── bridge.yml          # LAN bridge config
@@ -124,6 +126,7 @@ docs/                       # Documentation
 | nginx (laya) | 8080 | http://laya:8080 | http://laya.local:8080 |
 | nginx (hopo) | 8080 | http://hopo:8080 | http://hopo.local:8080 |
 | ntopng | 3000 | http://nsa:3000 | http://nsa.local:3000 |
+| Moltbot | 18789 | http://moltbot:18789 | http://moltbot.local:18789 |
 | Mosquitto | 1883 | - | - |
 | WireGuard | 51820 | - | - |
 
@@ -157,6 +160,7 @@ Key variables in `vault.yml`:
 - `vault_mikrotik_pppoe_username`, `vault_mikrotik_pppoe_password` - ISP credentials
 - `vault_mikrotik_wifi_ssid`, `vault_mikrotik_wifi_password` - WiFi config
 - `vault_mikrotik_guest_ssid`, `vault_mikrotik_guest_password` - Guest WiFi config
+- `vault_moltbot_token` - Moltbot API token
 
 ## Network
 

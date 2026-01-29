@@ -146,3 +146,31 @@ services:
       - ./plex/transcode:/transcode
       - /mnt/data/media:/data:ro    # Media library (read-only)
     restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Moltbot - AI assistant gateway
+  # Access: http://moltbot:18789
+  # LLM backend: Ollama on Mini (192.168.1.116:11434)
+  # ---------------------------------------------------------------------------
+  moltbot-gateway:
+    container_name: moltbot-gateway
+    image: ghcr.io/moltbot/clawdbot:main
+    ports:
+      - "18789:18789"
+    environment:
+      - TZ=Europe/London
+      - OLLAMA_HOST=http://192.168.1.116:11434
+      - MOLTBOT_TOKEN=${MOLTBOT_TOKEN:-}
+    restart: unless-stopped
+
+  moltbot-cli:
+    container_name: moltbot-cli
+    image: ghcr.io/moltbot/clawdbot:main
+    environment:
+      - TZ=Europe/London
+      - MOLTBOT_GATEWAY=http://moltbot-gateway:18789
+      - MOLTBOT_TOKEN=${MOLTBOT_TOKEN:-}
+    depends_on:
+      - moltbot-gateway
+    profiles:
+      - tools

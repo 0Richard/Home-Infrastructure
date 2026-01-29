@@ -1,0 +1,60 @@
+# =============================================================================
+# Ollama Tasks
+# =============================================================================
+# Install Ollama and configure it to serve on LAN
+# =============================================================================
+
+- name: Install Ollama via Homebrew
+  homebrew:
+    name: ollama
+    state: present
+  become: no
+  tags: ollama
+
+- name: Deploy ollama-serve launchd plist
+  copy:
+    dest: /Users/richardbell/Library/LaunchAgents/com.richard.ollama-serve.plist
+    mode: '0644'
+    content: |
+      <?xml version="1.0" encoding="UTF-8"?>
+      <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+      <plist version="1.0">
+      <dict>
+        <key>Label</key>
+        <string>com.richard.ollama-serve</string>
+        <key>ProgramArguments</key>
+        <array>
+          <string>/opt/homebrew/bin/ollama</string>
+          <string>serve</string>
+        </array>
+        <key>EnvironmentVariables</key>
+        <dict>
+          <key>OLLAMA_HOST</key>
+          <string>0.0.0.0:11434</string>
+        </dict>
+        <key>RunAtLoad</key>
+        <true/>
+        <key>KeepAlive</key>
+        <true/>
+        <key>StandardOutPath</key>
+        <string>/Users/richardbell/Library/Logs/ollama.log</string>
+        <key>StandardErrorPath</key>
+        <string>/Users/richardbell/Library/Logs/ollama.log</string>
+      </dict>
+      </plist>
+  notify: Load ollama-serve launchd
+  tags: ollama
+
+- name: Check if ollama-serve is loaded
+  command: launchctl list com.richard.ollama-serve
+  register: ollama_launchd
+  changed_when: false
+  failed_when: false
+  become: no
+  tags: ollama
+
+- name: Load ollama-serve if not running
+  command: launchctl load /Users/richardbell/Library/LaunchAgents/com.richard.ollama-serve.plist
+  when: ollama_launchd.rc != 0
+  become: no
+  tags: ollama

@@ -1,0 +1,14 @@
+# =============================================================================
+# Moltbot Tasks
+# =============================================================================
+# Create directories for Moltbot AI assistant gateway
+# =============================================================================
+
+- name: Create Moltbot directory
+  file:
+    path: /srv/docker/moltbot
+    state: directory
+    owner: richardbell
+    group: docker
+    mode: '0775'
+  tags: moltbot

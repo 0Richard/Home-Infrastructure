@@ -8,10 +8,10 @@ Personal infrastructure-as-code for home network devices.
 
 | Device | Role | Key Services |
 |--------|------|--------------|
-| **NSA** (Debian) | Home server | Pi-hole DNS, Home Assistant, Plex, WireGuard VPN, Zigbee, ntopng |
+| **NSA** (Debian) | Home server | Pi-hole DNS, Home Assistant, Plex, WireGuard VPN, Zigbee, ntopng, Moltbot |
 | **MKT** (MikroTik) | Router | PPPoE WAN, DHCP, WiFi, Guest network |
-| **Mini** (Mac) | Backup hub | Syncthing, iCloud backup |
-| **MB4** (Mac) | Workstation | Syncthing, Docker dev environment |
+| **Mini** (Mac) | Backup hub + LLM | Syncthing, iCloud backup, Ollama |
+| **MB4** (Mac) | Workstation + LLM | Syncthing, Docker dev, LM Studio |
 
 **Three  Networks:** managed via Ansible:
 
@@ -51,8 +51,8 @@ Personal infrastructure-as-code for home network devices.
 
 | Device | Role | Services |
 |--------|------|----------|
-| NSA | Home server | Docker, VPN, DNS, Media, MQTT, Zigbee, Syncthing, Cockpit |
-| Mini | Dev server / Backup hub | Syncthing, iCloud backup |
+| NSA | Home server | Docker, VPN, DNS, Media, MQTT, Zigbee, Syncthing, Cockpit, Moltbot AI |
+| Mini | Backup hub / LLM server | Syncthing, iCloud backup, Ollama |
 | MB4 | Daily workstation | Syncthing, Docker (Colima) |
 | iOS | Mobile | Syncthing, WireGuard VPN |
 | Router | Network gateway | PPPoE, DHCP, WiFi, Guest VLAN, Firewall |
@@ -67,7 +67,7 @@ Personal infrastructure-as-code for home network devices.
 |---|-------------|--------|-------|
 | 1 | SSH access from LAN | ✅ Done | Port 22, key-only auth |
 | 2 | SSH access from VPN | ✅ Done | Via WireGuard tunnel |
-| 3 | Docker containers running | ✅ Done | 7 containers: Pi-hole, Home Assistant, Plex, nginx, Mosquitto, Zigbee2MQTT, ntopng |
+| 3 | Docker containers running | ✅ Done | 8 containers: Pi-hole, Home Assistant, Plex, nginx, Mosquitto, Zigbee2MQTT, ntopng, Moltbot |
 | 4 | WireGuard VPN server | ✅ Done | Port 51820, 3 peers configured (MB4, Mini, iOS) |
 | 5 | Home Assistant accessible | ✅ Done | Port 8123 |
 | 6 | Plex media server | ✅ Done | Port 32400 |
@@ -82,6 +82,7 @@ Personal infrastructure-as-code for home network devices.
 | 15 | Ad-blocking (LAN) | ✅ Done | Pi-hole blocks ads network-wide |
 | 16 | Ad-blocking (VPN) | ✅ Done | Works when VPN active |
 | 17 | Local DNS names | ✅ Done | Pi-hole custom.list + /etc/hosts on Macs |
+| 18 | Moltbot AI assistant | ✅ Done | Port 18789, LLM via Ollama on Mini |
 
 ### Mini (Backup Hub)
 
@@ -92,6 +93,7 @@ Personal infrastructure-as-code for home network devices.
 | 3 | iCloud backup | ✅ Done | Daily 3am rsync to iCloud Drive |
 | 4 | Homebrew packages | ✅ Done | Managed via Ansible |
 | 5 | /etc/hosts entries | ✅ Done | NSA service names |
+| 6 | Ollama LLM server | ✅ Done | LAN-accessible on port 11434 |
 
 ### MB4 (Workstation)
 
@@ -106,6 +108,8 @@ Personal infrastructure-as-code for home network devices.
 | 7 | PostgreSQL container | ✅ Done | Port 5432, PostGIS 16 |
 | 8 | DynamoDB Local container | ✅ Done | Port 8000, AWS emulator |
 | 9 | k6 load testing | ✅ Done | On-demand (profiles: tools) |
+| 10 | OpenVAS vulnerability scanner | 📋 Planned | Security scanning |
+| 11 | nmap network scanner | 📋 Planned | Network reconnaissance |
 
 ### Router (MikroTik hAP ax³)
 
@@ -195,7 +199,7 @@ All DNS queries go through Pi-hole for ad-blocking and local name resolution.
 
 **Local DNS Records (Pi-hole custom.list):**
 ```
-192.168.1.183  nsa ha pihole plex laya hopo etc
+192.168.1.183  nsa ha pihole plex laya hopo etc moltbot
 192.168.1.116  mini
 ```
 
@@ -220,6 +224,7 @@ All DNS queries go through Pi-hole for ad-blocking and local name resolution.
 | 9090 | Cockpit | https://nsa:9090 | LAN + VPN |
 | 32400 | Plex | http://plex:32400/web | LAN + VPN |
 | 3000 | ntopng | http://nsa:3000 | LAN + VPN |
+| 18789 | Moltbot | http://moltbot:18789 | LAN + VPN |
 | 51820 | WireGuard | - | Anywhere |
 
 ### VPN Remote Access (when on conflicting 192.168.1.x network)
@@ -345,6 +350,7 @@ ansible-vault rekey vault.yml
 | vault_mikrotik_pppoe_username/password | ISP credentials |
 | vault_mikrotik_wifi_ssid/password | Main WiFi |
 | vault_mikrotik_guest_ssid/password | Guest WiFi |
+| vault_moltbot_token | Moltbot API token |
 
 ## Testing
 
@@ -398,6 +404,7 @@ Before running Ansible, NSA needs:
 | 9090 | TCP | Cockpit | LAN + VPN |
 | 32400 | TCP | Plex | LAN + VPN |
 | 3000 | TCP | ntopng | LAN + VPN |
+| 18789 | TCP | Moltbot | LAN + VPN |
 | 51820 | UDP | WireGuard | Anywhere |
 
 ## File Locations
@@ -419,6 +426,13 @@ Before running Ansible, NSA needs:
 | Backup script | ~/bin/sync-backup.sh |
 | Backup log | ~/Library/Logs/sync-backup.log |
 | LaunchAgents | ~/Library/LaunchAgents/ |
+
+### Local LLM Models
+
+| Device | Server | Model | Quant | Size | Path |
+|--------|--------|-------|-------|------|------|
+| Mini | Ollama | qwen2.5:14b | Q4_K_M | 9GB | ~/.ollama/models/ |
+| MB4 | LM Studio | Qwen2.5-32B-Instruct | Q6_K | 25GB | ~/.lmstudio/models/ |
 
 ### MB4 Docker (Colima)
 | Item | Path |

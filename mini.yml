@@ -26,10 +26,16 @@
       tags: icloud-backup
     - import_tasks: tasks/mackup.yml
       tags: mackup
+    - import_tasks: tasks/ollama.yml
+      tags: ollama
     - import_tasks: tasks/hosts-macos.yml
       tags: [hosts, dns]
 
   handlers:
     - name: Load sync-backup launchd
       command: launchctl load ~/Library/LaunchAgents/com.richard.sync-backup.plist
+      become: no
+
+    - name: Load ollama-serve launchd
+      command: launchctl load ~/Library/LaunchAgents/com.richard.ollama-serve.plist
       become: no

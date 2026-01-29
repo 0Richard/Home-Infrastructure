@@ -94,6 +94,8 @@ Personal infrastructure-as-code for home network devices.
 | 4 | Homebrew packages | ✅ Done | Managed via Ansible |
 | 5 | /etc/hosts entries | ✅ Done | NSA service names |
 | 6 | Ollama LLM server | ✅ Done | LAN-accessible on port 11434 |
+| 7 | Auto-login after reboot | ✅ Done | LaunchAgents (Ollama, Syncthing) start without manual login |
+| 8 | Always-on power settings | ✅ Done | No sleep, Wake on LAN, auto-restart after power failure |
 
 ### MB4 (Workstation)
 
@@ -351,6 +353,7 @@ ansible-vault rekey vault.yml
 | vault_mikrotik_wifi_ssid/password | Main WiFi |
 | vault_mikrotik_guest_ssid/password | Guest WiFi |
 | vault_moltbot_token | Moltbot API token |
+| vault_mini_login_password | Mini macOS login password (auto-login) |
 
 ## Testing
 

@@ -35,7 +35,7 @@ ansible-playbook mb4.yml --tags docker   # Set up Colima + dev containers
 ansible-playbook mkt.yml --tags dhcp     # DHCP server config
 ansible-playbook mkt.yml --tags firewall # NAT and filter rules
 
-# Available tags: common, ssh, cockpit, avahi, docker, colima, nftables, pihole, wireguard, syncthing, backup, plex, moltbot, ollama, homebrew, icloud-backup, mackup, hosts, dns, identity, bridge, network, ip, pppoe, wan, dhcp, nat, filter, wifi, wireless, services, security, traffic-flow, monitoring
+# Available tags: common, ssh, cockpit, avahi, docker, colima, nftables, pihole, wireguard, syncthing, backup, plex, moltbot, ollama, power, autologin, homebrew, icloud-backup, mackup, hosts, dns, identity, bridge, network, ip, pppoe, wan, dhcp, nat, filter, wifi, wireless, services, security, traffic-flow, monitoring
 
 # Vault operations
 ansible-vault view vault.yml
@@ -161,6 +161,7 @@ Key variables in `vault.yml`:
 - `vault_mikrotik_wifi_ssid`, `vault_mikrotik_wifi_password` - WiFi config
 - `vault_mikrotik_guest_ssid`, `vault_mikrotik_guest_password` - Guest WiFi config
 - `vault_moltbot_token` - Moltbot API token
+- `vault_mini_login_password` - Mini macOS login password (for auto-login after reboot)
 
 ## Network
 

@@ -160,14 +160,17 @@ services:
     command: >
       sh -c '
         mkdir -p /home/node/.clawdbot &&
-        echo "{\"gateway\":{\"bind\":\"lan\"}}" > /home/node/.clawdbot/clawdbot.json &&
+        [ -f /home/node/.clawdbot/clawdbot.json ] ||
+        echo "{\"gateway\":{\"mode\":\"local\",\"bind\":\"lan\",\"trustedProxies\":[\"127.0.0.1\"]},\"agents\":{\"defaults\":{\"model\":{\"primary\":\"ollama/qwen2.5:7b-16k\"}}},\"models\":{\"providers\":{\"ollama\":{\"baseUrl\":\"http://192.168.1.116:11434/v1\",\"apiKey\":\"ollama-local\",\"api\":\"openai-completions\",\"models\":[{\"id\":\"qwen2.5:7b-16k\",\"name\":\"Qwen 2.5 7B\",\"reasoning\":false,\"input\":[\"text\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":16384,\"maxTokens\":4096}]}}}}" > /home/node/.clawdbot/clawdbot.json &&
         exec node dist/index.js gateway --allow-unconfigured
       '
-    ports:
-      - "18789:18789"
+    network_mode: host
+    volumes:
+      - /srv/docker/moltbot/state:/home/node/.clawdbot
     environment:
       - TZ=Europe/London
       - OLLAMA_HOST=http://192.168.1.116:11434
+      - OLLAMA_API_KEY=ollama-local
       - CLAWDBOT_GATEWAY_TOKEN=${MOLTBOT_TOKEN:-}
     restart: unless-stopped
 
@@ -182,3 +185,4 @@ services:
       - moltbot-gateway
     profiles:
       - tools
+

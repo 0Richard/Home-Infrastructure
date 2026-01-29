@@ -4,11 +4,14 @@
 # Create directories for Moltbot AI assistant gateway
 # =============================================================================
 
-- name: Create Moltbot directory
+- name: Create Moltbot directories
   file:
-    path: /srv/docker/moltbot
+    path: "{{ item }}"
     state: directory
-    owner: richardbell
-    group: docker
-    mode: '0775'
+    owner: '1000'
+    group: '1000'
+    mode: '0700'
+  loop:
+    - /srv/docker/moltbot
+    - /srv/docker/moltbot/state
   tags: moltbot

@@ -83,7 +83,7 @@ Personal infrastructure-as-code for home network devices.
 | 15 | Ad-blocking (LAN) | ✅ Done | Pi-hole blocks ads network-wide |
 | 16 | Ad-blocking (VPN) | ✅ Done | Works when VPN active |
 | 17 | Local DNS names | ✅ Done | Pi-hole custom.list + /etc/hosts on Macs |
-| 18 | Moltbot AI assistant | ✅ Done | https://moltbot (via nginx HTTPS proxy) |
+| 18 | Moltbot AI assistant | ✅ Done | https://moltbot (via nginx HTTPS proxy), Ollama backend on Mini |
 
 ### Mini (Backup Hub)
 
@@ -94,7 +94,7 @@ Personal infrastructure-as-code for home network devices.
 | 3 | iCloud backup | ✅ Done | Daily 3am rsync to iCloud Drive |
 | 4 | Homebrew packages | ✅ Done | Managed via Ansible |
 | 5 | /etc/hosts entries | ✅ Done | NSA service names |
-| 6 | Ollama LLM server | ✅ Done | LAN-accessible on port 11434 |
+| 6 | Ollama LLM server | ✅ Done | LAN-accessible on port 11434, Moltbot backend (qwen2.5:7b-16k) |
 | 7 | Auto-login after reboot | ✅ Done | LaunchAgents (Ollama, Syncthing) start without manual login |
 | 8 | Always-on power settings | ✅ Done | No sleep, Wake on LAN, auto-restart after power failure |
 
@@ -375,7 +375,7 @@ See `tests/README.md` for details.
 |------|------|--------|-------|
 | 2026-01-29 | Comprehensive LAN test | ✅ Pass | DNS (9/9), SSH (3/3), HTTP services (8/8), Ollama, MikroTik |
 | 2026-01-29 | Plex HTTPS requirement | ⚠️ Note | HTTP returns empty reply; HTTPS works. Bookmarks updated to `https://` |
-| 2026-01-29 | Ollama LAN access | ✅ Pass | `http://192.168.1.116:11434/` responds, qwen2.5:14b model loaded |
+| 2026-01-29 | Ollama LAN access | ✅ Pass | `http://192.168.1.116:11434/` responds, qwen2.5:7b-16k active for Moltbot |
 | 2026-01-21 | iOS WireGuard VPN | ✅ Pass | 10.0.0.2, Pi-hole/Plex accessible from mobile |
 | 2026-01-21 | Guest network isolation | ✅ Pass | 192.168.10.x, internet works, LAN blocked |
 | 2026-01-21 | WireGuard full tunnel | ✅ Pass | Remote access to ha, pihole, plex |
@@ -403,7 +403,7 @@ Before running Ansible, NSA needs:
 | 22 | TCP | SSH | LAN + VPN |
 | 53 | TCP/UDP | DNS (Pi-hole) | LAN + VPN |
 | 80 | TCP | HTTP (nginx) | LAN + VPN |
-| 443 | TCP | Pi-hole Admin (HTTPS) | LAN + VPN |
+| 443 | TCP | HTTPS (Moltbot) | LAN + VPN |
 | 1883 | TCP | MQTT | LAN + VPN |
 | 8123 | TCP | Home Assistant | LAN + VPN |
 | 9090 | TCP | Cockpit | LAN + VPN |
@@ -434,10 +434,13 @@ Before running Ansible, NSA needs:
 
 ### Local LLM Models
 
-| Device | Server | Model | Quant | Size | Path |
-|--------|--------|-------|-------|------|------|
-| Mini | Ollama | qwen2.5:14b | Q4_K_M | 9GB | ~/.ollama/models/ |
-| MB4 | LM Studio | Qwen2.5-32B-Instruct | Q6_K | 25GB | ~/.lmstudio/models/ |
+| Device | Server | Model | Context | Size | Notes |
+|--------|--------|-------|---------|------|-------|
+| Mini | Ollama | qwen2.5:7b-16k | 16K | ~5GB | Active Moltbot backend (~12s response) |
+| Mini | Ollama | qwen2.5:14b | 4K default | ~9GB | Available but too slow for Moltbot agentic mode |
+| MB4 | LM Studio | Qwen2.5-32B-Instruct | - | 25GB | Local dev |
+
+**Moltbot LLM setup:** Moltbot gateway (NSA) connects to Ollama (Mini, 192.168.1.116:11434) via explicit provider config. Custom Ollama model `qwen2.5:7b-16k` created with `num_ctx: 16384` to meet gateway's 16K minimum context requirement. The 14B model works but is too slow for agentic chat on M1 16GB (~84s vs ~12s for 7B).
 
 ### MB4 Docker (Colima)
 | Item | Path |

@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Personal infrastructure-as-code (Ansible) managing a home network with four devices:
 
 - **NSA** (`192.168.1.183`): Debian 13 home server running Docker containers (Pi-hole, Home Assistant, Plex, WireGuard, nginx, Mosquitto, Zigbee2MQTT, ntopng, Moltbot) + Cockpit web admin
-- **Mini** (`192.168.1.116`): Mac Mini M1 for Syncthing, iCloud backup, and Ollama LLM
+- **Mini** (`192.168.1.116`): Mac Mini M1 for Syncthing, iCloud backup, and Ollama LLM (Moltbot backend)
 - **MB4**: MacBook Pro M4 workstation with Syncthing and Docker (Colima) for local dev
 - **MKT** (`192.168.1.1`): MikroTik hAP ax³ router (PPPoE WAN, DHCP, firewall, WiFi)
 
@@ -135,6 +135,25 @@ All browser services are accessible via nginx reverse proxy — no port numbers 
 
 **Note:** Short hostnames (e.g., `ha`, `pihole`) are resolved by Pi-hole DNS and work over both LAN and WireGuard VPN. `.local` variants (e.g., `ha.local`) use mDNS (Avahi) and only work on LAN.
 
+## Moltbot + Ollama Architecture
+
+Moltbot gateway runs on NSA (Docker), connects to Ollama on Mini (192.168.1.116:11434) as its LLM backend.
+
+**Config:** Explicit provider config in `docker-compose.yml` moltbot-gateway `command` block (JSON written to `clawdbot.json` on first run). Remote Ollama requires `api: "openai-completions"`, `baseUrl`, `apiKey`, and full `models` array with object entries.
+
+**Model:** `qwen2.5:7b-16k` — custom Ollama model created with `num_ctx: 16384` to meet gateway's 16K minimum context window. The 14B model is available but too slow for agentic chat on M1 16GB (~84s vs ~12s for 7B).
+
+**Creating custom Ollama models on Mini:**
+```bash
+curl -s http://192.168.1.116:11434/api/create -d '{"model":"qwen2.5:7b-16k","from":"qwen2.5:7b","parameters":{"num_ctx":16384}}'
+```
+
+**Key constraints:**
+- Gateway minimum context: 16,000 tokens (errors below this, warns below 32K)
+- Ollama default `num_ctx`: 4096 (too small — gateway rejects it)
+- 14B + 16K context uses ~10GB VRAM on M1 — functional but slow for agentic mode
+- 7B + 16K context uses ~5.4GB VRAM — acceptable speed (~12s warm response)
+
 ## NSA Storage
 
 Two-tier storage balancing speed and capacity:
@@ -201,7 +220,7 @@ Key variables in `vault.yml`:
 |------|------|--------|
 | 2026-01-29 | Comprehensive network test | ✅ Pass - 9/9 DNS, 3/3 SSH, 8/8 HTTP services, Ollama LAN access |
 | 2026-01-29 | Plex HTTPS requirement | ⚠️ Note - HTTP returns empty reply, HTTPS works (302). Updated bookmarks to `https://` |
-| 2026-01-29 | Ollama LAN access | ✅ Pass - `http://192.168.1.116:11434/` responds, qwen2.5:14b available |
+| 2026-01-29 | Ollama LAN access | ✅ Pass - `http://192.168.1.116:11434/` responds, qwen2.5:7b-16k active for Moltbot |
 | 2026-01-29 | MikroTik router health | ✅ Pass - RouterOS 7.19.6, uptime 9+ days, 2% CPU |
 | 2026-01-21 | Guest WiFi isolation | ✅ Pass - Internet works, LAN blocked (192.168.1.x unreachable) |
 | 2026-01-21 | WireGuard full tunnel (mobile) | ✅ Pass - ping 10.0.0.1, http://ha:8123, https://pihole/admin |

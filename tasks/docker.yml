@@ -75,7 +75,7 @@
   loop:
     - sites/laya
     - sites/hopo
-    - sites/etc
+    - sites/docs
 
 - name: Create mosquitto subdirectories
   file:
@@ -119,6 +119,15 @@
   copy:
     src: files/nsa/mosquitto.conf
     dest: "{{ docker_data_path }}/mosquitto/config/mosquitto.conf"
+    owner: root
+    group: docker
+    mode: '0644'
+  notify: Restart docker containers
+
+- name: Deploy docs site index.html
+  copy:
+    src: files/nsa/docs-site/index.html
+    dest: "{{ docker_data_path }}/nginx/sites/docs/index.html"
     owner: root
     group: docker
     mode: '0644'

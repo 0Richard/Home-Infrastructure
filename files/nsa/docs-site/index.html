@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Infrastructure</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            line-height: 1.6; color: #c9d1d9; background: #0d1117;
+            max-width: 960px; margin: 0 auto; padding: 24px 16px;
+        }
+        a { color: #58a6ff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        h1 { color: #f0f6fc; margin-bottom: 8px; font-size: 1.8em; }
+        h1 + p { color: #8b949e; margin-bottom: 24px; }
+        /* Service table */
+        .services { width: 100%; border-collapse: collapse; margin-bottom: 32px; }
+        .services th { text-align: left; color: #8b949e; font-weight: 600; font-size: 0.85em;
+            text-transform: uppercase; letter-spacing: 0.05em;
+            padding: 8px 12px; border-bottom: 2px solid #21262d; }
+        .services td { padding: 10px 12px; border-bottom: 1px solid #21262d; }
+        .services tr:hover { background: #161b22; }
+        .services .status { display: inline-block; width: 8px; height: 8px;
+            border-radius: 50%; background: #484f58; margin-right: 8px; vertical-align: middle; }
+        .services .status.up { background: #3fb950; }
+        .services .status.down { background: #f85149; }
+        /* README content */
+        #readme { border-top: 2px solid #21262d; padding-top: 24px; margin-top: 8px; }
+        #readme h1, #readme h2, #readme h3 { color: #f0f6fc; margin: 24px 0 12px; }
+        #readme h1 { font-size: 1.6em; border-bottom: 1px solid #21262d; padding-bottom: 8px; }
+        #readme h2 { font-size: 1.3em; border-bottom: 1px solid #21262d; padding-bottom: 6px; }
+        #readme h3 { font-size: 1.1em; }
+        #readme p { margin: 12px 0; }
+        #readme table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+        #readme th { text-align: left; background: #161b22; color: #f0f6fc; }
+        #readme th, #readme td { padding: 8px 12px; border: 1px solid #21262d; }
+        #readme code { background: #161b22; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+        #readme pre { background: #161b22; padding: 16px; border-radius: 6px;
+            overflow-x: auto; margin: 12px 0; }
+        #readme pre code { background: none; padding: 0; }
+        #readme ul, #readme ol { padding-left: 24px; margin: 8px 0; }
+        #readme li { margin: 4px 0; }
+        #readme hr { border: none; border-top: 1px solid #21262d; margin: 24px 0; }
+        #readme img { max-width: 100%; }
+        #readme blockquote { border-left: 3px solid #3fb950; padding-left: 16px; color: #8b949e; }
+        .loading { color: #8b949e; font-style: italic; }
+    </style>
+</head>
+<body>
+    <h1>Home Infrastructure</h1>
+    <p>Service directory &mdash; all accessible from LAN and WireGuard VPN</p>
+
+    <table class="services">
+        <thead>
+            <tr><th>Service</th><th>URL</th><th>Direct (IP:Port)</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><span class="status" data-check="http://ha"></span>Home Assistant</td>
+                <td><a href="http://ha">http://ha</a></td>
+                <td><a href="http://192.168.1.183:8123">192.168.1.183:8123</a></td>
+            </tr>
+            <tr>
+                <td><span class="status" data-check="http://pihole/admin"></span>Pi-hole Admin</td>
+                <td><a href="http://pihole/admin">http://pihole/admin</a></td>
+                <td><a href="http://192.168.1.183:8081/admin">192.168.1.183:8081/admin</a></td>
+            </tr>
+            <tr>
+                <td><span class="status" data-check="http://plex/web"></span>Plex</td>
+                <td><a href="http://plex/web">http://plex/web</a></td>
+                <td><a href="https://192.168.1.183:32400/web">192.168.1.183:32400</a></td>
+            </tr>
+            <tr>
+                <td><span class="status" data-check="http://nsa"></span>Cockpit</td>
+                <td><a href="http://nsa">http://nsa</a></td>
+                <td><a href="https://192.168.1.183:9090">192.168.1.183:9090</a></td>
+            </tr>
+            <tr>
+                <td><span class="status" data-check="https://moltbot"></span>Moltbot</td>
+                <td><a href="https://moltbot">https://moltbot</a></td>
+                <td><a href="http://192.168.1.183:18789">192.168.1.183:18789</a></td>
+            </tr>
+            <tr>
+                <td><span class="status" data-check="http://ntopng"></span>ntopng</td>
+                <td><a href="http://ntopng">http://ntopng</a></td>
+                <td><a href="http://192.168.1.183:3000">192.168.1.183:3000</a></td>
+            </tr>
+            <tr>
+                <td><span class="status" data-check="http://laya"></span>Laya</td>
+                <td><a href="http://laya">http://laya</a></td>
+                <td>&mdash;</td>
+            </tr>
+            <tr>
+                <td><span class="status" data-check="http://hopo"></span>Hopo</td>
+                <td><a href="http://hopo">http://hopo</a></td>
+                <td>&mdash;</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div id="readme"><p class="loading">Loading README&hellip;</p></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
+    <script>
+        fetch('README.md')
+            .then(function(r) { return r.text(); })
+            .then(function(md) { document.getElementById('readme').innerHTML = marked.parse(md); })
+            .catch(function() { document.getElementById('readme').innerHTML = '<p>Failed to load README.md</p>'; });
+
+        // Live status checks
+        document.querySelectorAll('.status[data-check]').forEach(function(dot) {
+            var url = dot.getAttribute('data-check');
+            fetch(url, { mode: 'no-cors', signal: AbortSignal.timeout(5000) })
+                .then(function() { dot.classList.add('up'); })
+                .catch(function() { dot.classList.add('down'); });
+        });
+    </script>
+</body>
+</html>

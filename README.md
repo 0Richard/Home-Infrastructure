@@ -31,7 +31,7 @@ Personal infrastructure-as-code for home network devices.
 | Cockpit | http://nsa |
 | Moltbot | https://moltbot |
 | ntopng | http://ntopng |
-| Static sites | http://laya, http://hopo |
+| Static sites | http://laya, http://hopo, http://docs |
 | SSH | ssh richardbell@nsa |
 | Syncthing | ~/Sync/ folder sync |
 
@@ -202,7 +202,7 @@ All DNS queries go through Pi-hole for ad-blocking and local name resolution.
 
 **Local DNS Records (Pi-hole custom.list):**
 ```
-192.168.1.183  nsa ha pihole plex laya hopo etc moltbot
+192.168.1.183  nsa ha pihole plex laya hopo docs moltbot
 192.168.1.116  mini
 ```
 
@@ -243,7 +243,7 @@ sudo sh -c 'echo "10.0.0.1  laya hopo etc ha plex pihole nsa" >> /etc/hosts'
 | Cockpit | http://nsa |
 | Moltbot | https://moltbot |
 | ntopng | http://ntopng |
-| Static sites | http://laya, http://hopo |
+| Static sites | http://laya, http://hopo, http://docs |
 | SSH | ssh root@10.0.0.1 |
 
 ### SSH Access

@@ -130,6 +130,7 @@ All browser services are accessible via nginx reverse proxy — no port numbers 
 | ntopng | http://ntopng | |
 | Laya | http://laya | Static site |
 | Hopo | http://hopo | Static site |
+| Docs | http://docs | README + service directory |
 | Mosquitto | - | Port 1883 (not browser) |
 | WireGuard | - | Port 51820 (not browser) |
 

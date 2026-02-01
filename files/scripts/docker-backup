@@ -28,6 +28,14 @@ mkdir -p "$SYNC_BACKUP_DIR"
 
 echo "=== Docker Backup Started: $(date) ==="
 
+# Always restart containers, even if backup fails
+restart_containers() {
+    echo "Starting containers..."
+    cd "$DOCKER_DIR"
+    docker compose start
+}
+trap restart_containers EXIT
+
 # Stop containers for consistent backup
 echo "Stopping containers..."
 cd "$DOCKER_DIR"
@@ -42,15 +50,11 @@ tar -czf "$LOCAL_BACKUP_DIR/$BACKUP_NAME" \
     -C "$DOCKER_DIR" \
     docker-compose.yml \
     homeassistant \
-    zigbee2mqtt \
     mosquitto \
     pihole \
     plex/config \
-    nginx
-
-# Restart containers
-echo "Starting containers..."
-docker compose start
+    nginx \
+    moltbot
 
 # Copy latest to Sync folder (for offsite backup)
 echo "Copying to Sync folder..."

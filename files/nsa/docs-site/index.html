@@ -23,8 +23,9 @@
         .services td { padding: 10px 12px; border-bottom: 1px solid #21262d; }
         .services tr:hover { background: #161b22; }
         .services .status { display: inline-block; width: 8px; height: 8px;
-            border-radius: 50%; background: #484f58; margin-right: 8px; vertical-align: middle; }
+            border-radius: 50%; background: #484f58; margin-right: 6px; vertical-align: middle; }
         .services .status.up { background: #3fb950; }
+        .services .status.slow { background: #d29922; }
         .services .status.down { background: #f85149; }
         /* README content */
         #readme { border-top: 2px solid #21262d; padding-top: 24px; margin-top: 8px; }
@@ -58,43 +59,43 @@
         </thead>
         <tbody>
             <tr>
-                <td><span class="status" data-check="http://ha"></span>Home Assistant</td>
-                <td><a href="http://ha">http://ha</a></td>
-                <td><a href="http://192.168.1.183:8123">192.168.1.183:8123</a></td>
+                <td>Home Assistant</td>
+                <td><span class="status" data-check="http://ha"></span><a href="http://ha">http://ha</a></td>
+                <td><span class="status" data-check="http://192.168.1.183:8123"></span><a href="http://192.168.1.183:8123">192.168.1.183:8123</a></td>
             </tr>
             <tr>
-                <td><span class="status" data-check="http://pihole/admin"></span>Pi-hole Admin</td>
-                <td><a href="http://pihole/admin">http://pihole/admin</a></td>
-                <td><a href="http://192.168.1.183:8081/admin">192.168.1.183:8081/admin</a></td>
+                <td>Pi-hole Admin</td>
+                <td><span class="status" data-check="http://pihole/admin"></span><a href="http://pihole/admin">http://pihole/admin</a></td>
+                <td><span class="status" data-check="http://192.168.1.183:8081/admin"></span><a href="http://192.168.1.183:8081/admin">192.168.1.183:8081</a></td>
             </tr>
             <tr>
-                <td><span class="status" data-check="http://plex/web"></span>Plex</td>
-                <td><a href="http://plex/web">http://plex/web</a></td>
-                <td><a href="https://192.168.1.183:32400/web">192.168.1.183:32400</a></td>
+                <td>Plex</td>
+                <td><span class="status" data-check="http://plex/web"></span><a href="http://plex/web">http://plex/web</a></td>
+                <td><span class="status" data-check="https://192.168.1.183:32400/web"></span><a href="https://192.168.1.183:32400/web">192.168.1.183:32400</a></td>
             </tr>
             <tr>
-                <td><span class="status" data-check="http://nsa"></span>Cockpit</td>
-                <td><a href="http://nsa">http://nsa</a></td>
-                <td><a href="https://192.168.1.183:9090">192.168.1.183:9090</a></td>
+                <td>Cockpit</td>
+                <td><span class="status" data-check="http://nsa"></span><a href="http://nsa">http://nsa</a></td>
+                <td><span class="status" data-check="https://192.168.1.183:9090"></span><a href="https://192.168.1.183:9090">192.168.1.183:9090</a></td>
             </tr>
             <tr>
-                <td><span class="status" data-check="https://moltbot"></span>Moltbot</td>
-                <td><a href="https://moltbot">https://moltbot</a></td>
-                <td><a href="http://192.168.1.183:18789">192.168.1.183:18789</a></td>
+                <td>Moltbot</td>
+                <td><span class="status" data-check="https://moltbot"></span><a href="https://moltbot">https://moltbot</a></td>
+                <td><span class="status" data-check="http://192.168.1.183:18789"></span><a href="http://192.168.1.183:18789">192.168.1.183:18789</a></td>
             </tr>
             <tr>
-                <td><span class="status" data-check="http://ntopng"></span>ntopng</td>
-                <td><a href="http://ntopng">http://ntopng</a></td>
-                <td><a href="http://192.168.1.183:3000">192.168.1.183:3000</a></td>
+                <td>ntopng</td>
+                <td><span class="status" data-check="http://ntopng"></span><a href="http://ntopng">http://ntopng</a></td>
+                <td><span class="status" data-check="http://192.168.1.183:3000"></span><a href="http://192.168.1.183:3000">192.168.1.183:3000</a></td>
             </tr>
             <tr>
-                <td><span class="status" data-check="http://laya"></span>Laya</td>
-                <td><a href="http://laya">http://laya</a></td>
+                <td>Laya</td>
+                <td><span class="status" data-check="http://laya"></span><a href="http://laya">http://laya</a></td>
                 <td>&mdash;</td>
             </tr>
             <tr>
-                <td><span class="status" data-check="http://hopo"></span>Hopo</td>
-                <td><a href="http://hopo">http://hopo</a></td>
+                <td>Hopo</td>
+                <td><span class="status" data-check="http://hopo"></span><a href="http://hopo">http://hopo</a></td>
                 <td>&mdash;</td>
             </tr>
         </tbody>
@@ -109,11 +110,15 @@
             .then(function(md) { document.getElementById('readme').innerHTML = marked.parse(md); })
             .catch(function() { document.getElementById('readme').innerHTML = '<p>Failed to load README.md</p>'; });
 
-        // Live status checks
+        // Live status checks: green (<3s), amber (3-5s slow), red (failed/timeout)
         document.querySelectorAll('.status[data-check]').forEach(function(dot) {
             var url = dot.getAttribute('data-check');
+            var start = performance.now();
             fetch(url, { mode: 'no-cors', signal: AbortSignal.timeout(5000) })
-                .then(function() { dot.classList.add('up'); })
+                .then(function() {
+                    var elapsed = performance.now() - start;
+                    dot.classList.add(elapsed > 3000 ? 'slow' : 'up');
+                })
                 .catch(function() { dot.classList.add('down'); });
         });
     </script>

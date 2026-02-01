@@ -47,6 +47,32 @@
         #readme img { max-width: 100%; }
         #readme blockquote { border-left: 3px solid #3fb950; padding-left: 16px; color: #8b949e; }
         .loading { color: #8b949e; font-style: italic; }
+        /* Status legend */
+        .legend { color: #8b949e; font-size: 0.85em; margin-bottom: 32px; }
+        .legend .dot { display: inline-block; width: 8px; height: 8px;
+            border-radius: 50%; vertical-align: middle; margin: 0 4px 0 12px; }
+        .legend .dot:first-child { margin-left: 0; }
+        .legend .dot.g { background: #3fb950; }
+        .legend .dot.a { background: #d29922; }
+        .legend .dot.r { background: #f85149; }
+        .legend .dot.x { background: #484f58; }
+        /* Syncthing status */
+        .sync-section { margin-bottom: 32px; }
+        .sync-section h2 { color: #f0f6fc; font-size: 1.2em; margin-bottom: 12px; }
+        .sync-devices { display: flex; gap: 16px; flex-wrap: wrap; }
+        .sync-device { background: #161b22; border: 1px solid #21262d; border-radius: 6px;
+            padding: 12px 16px; min-width: 140px; }
+        .sync-device .name { color: #f0f6fc; font-weight: 600; margin-bottom: 4px; }
+        .sync-device .info { color: #8b949e; font-size: 0.85em; }
+        .sync-device .status-dot { display: inline-block; width: 8px; height: 8px;
+            border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+        .sync-device .status-dot.connected { background: #3fb950; }
+        .sync-device .status-dot.disconnected { background: #f85149; }
+        .sync-folder { color: #8b949e; font-size: 0.85em; margin-top: 12px; }
+        .sync-folder .state { color: #c9d1d9; }
+        .sync-folder .state.idle { color: #3fb950; }
+        .sync-folder .state.syncing { color: #d29922; }
+        .sync-folder .state.error { color: #f85149; }
     </style>
 </head>
 <body>
@@ -70,13 +96,13 @@
             </tr>
             <tr>
                 <td>Plex</td>
-                <td><span class="status" data-check="http://plex./web"></span><a href="http://plex./web">http://plex/web</a></td>
-                <td><span class="status" data-check="https://192.168.1.183:32400/web"></span><a href="https://192.168.1.183:32400/web">192.168.1.183:32400</a></td>
+                <td><span class="status"></span><a href="http://plex./web">http://plex/web</a></td>
+                <td><span class="status"></span><a href="https://192.168.1.183:32400/web">192.168.1.183:32400</a></td>
             </tr>
             <tr>
                 <td>Cockpit</td>
-                <td><span class="status" data-check="http://nsa./"></span><a href="http://nsa./">http://nsa</a></td>
-                <td><span class="status" data-check="https://192.168.1.183:9090"></span><a href="https://192.168.1.183:9090">192.168.1.183:9090</a></td>
+                <td><span class="status"></span><a href="http://nsa./">http://nsa</a></td>
+                <td><span class="status"></span><a href="https://192.168.1.183:9090">192.168.1.183:9090</a></td>
             </tr>
             <tr>
                 <td>Moltbot</td>
@@ -101,6 +127,18 @@
         </tbody>
     </table>
 
+    <p class="legend">
+        <span class="dot g"></span> Reachable
+        <span class="dot a"></span> Slow (&gt;3s)
+        <span class="dot r"></span> Unreachable
+        <span class="dot x"></span> Not checked (HTTPS)
+    </p>
+
+    <div class="sync-section">
+        <h2>Syncthing</h2>
+        <div id="sync-status"><p class="loading">Loading sync status&hellip;</p></div>
+    </div>
+
     <div id="readme"><p class="loading">Loading README&hellip;</p></div>
 
     <script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
@@ -109,6 +147,69 @@
             .then(function(r) { return r.text(); })
             .then(function(md) { document.getElementById('readme').innerHTML = marked.parse(md); })
             .catch(function() { document.getElementById('readme').innerHTML = '<p>Failed to load README.md</p>'; });
+
+        // Syncthing status (fetched on page load via nginx API proxy)
+        Promise.all([
+            fetch('/api/syncthing/system/connections').then(function(r) { return r.json(); }),
+            fetch('/api/syncthing/config/devices').then(function(r) { return r.json(); }),
+            fetch('/api/syncthing/db/status?folder=default').then(function(r) { return r.json(); }),
+            fetch('/api/syncthing/system/version').then(function(r) { return r.json(); })
+        ]).then(function(results) {
+            var connections = results[0];
+            var devices = results[1];
+            var folder = results[2];
+            var sysVersion = results[3];
+            var totalBytes = folder.globalBytes;
+
+            // Fetch completion per remote device (how much each has synced)
+            var completionPromises = devices.map(function(dev) {
+                if (dev.name === 'nsa') return Promise.resolve(null);
+                return fetch('/api/syncthing/db/completion?device=' + dev.deviceID + '&folder=default')
+                    .then(function(r) { return r.json(); })
+                    .catch(function() { return null; });
+            });
+
+            return Promise.all(completionPromises).then(function(completions) {
+                var container = document.getElementById('sync-status');
+                var html = '<div class="sync-devices">';
+                devices.forEach(function(dev, i) {
+                    var isLocal = dev.name === 'nsa';
+                    var conn = connections.connections[dev.deviceID] || {};
+                    var connected = isLocal || conn.connected || false;
+                    var version = isLocal ? sysVersion.version : (conn.clientVersion || '');
+                    var completion = completions[i];
+
+                    var sizeStr = '';
+                    if (isLocal) {
+                        sizeStr = (totalBytes / 1073741824).toFixed(1) + ' GB';
+                    } else if (completion && completion.globalBytes) {
+                        var synced = (completion.globalBytes - (completion.needBytes || 0)) / 1073741824;
+                        sizeStr = synced.toFixed(1) + ' GB';
+                    }
+
+                    html += '<div class="sync-device">';
+                    html += '<div class="name"><span class="status-dot ' + (connected ? 'connected' : 'disconnected') + '"></span>' + dev.name + '</div>';
+                    html += '<div class="info">' + (connected ? version : 'Disconnected') + '</div>';
+                    if (sizeStr) html += '<div class="info">' + sizeStr + '</div>';
+                    html += '</div>';
+                });
+                html += '</div>';
+
+                var state = folder.state || 'unknown';
+                var stateClass = state === 'idle' ? 'idle' : (state === 'syncing' ? 'syncing' : '');
+                var files = (folder.globalFiles / 1000).toFixed(0) + 'k';
+                var needFiles = folder.needFiles || 0;
+                html += '<div class="sync-folder">';
+                html += 'Folder: <span class="state ' + stateClass + '">' + state + '</span>';
+                html += ' &mdash; ' + files + ' files';
+                if (needFiles > 0) html += ' &mdash; ' + needFiles + ' files out of sync';
+                html += '</div>';
+
+                container.innerHTML = html;
+            });
+        }).catch(function() {
+            document.getElementById('sync-status').innerHTML = '<p class="loading">Syncthing API unavailable</p>';
+        });
 
         // Live status checks: green (<3s), amber (3-5s slow), red (failed/timeout)
         document.querySelectorAll('.status[data-check]').forEach(function(dot) {

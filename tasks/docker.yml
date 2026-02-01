@@ -133,6 +133,24 @@
     mode: '0644'
   notify: Restart docker containers
 
+- name: Extract Syncthing API key for nginx proxy
+  shell: grep -oP '(?<=<apikey>)[^<]+' /home/richardbell/.local/state/syncthing/config.xml
+  register: syncthing_api_key
+  changed_when: false
+  failed_when: false
+  tags: docker
+
+- name: Deploy Syncthing API key for nginx
+  copy:
+    content: "proxy_set_header X-API-Key {{ syncthing_api_key.stdout }};\n"
+    dest: "{{ docker_data_path }}/nginx/syncthing-api-key.conf"
+    owner: root
+    group: docker
+    mode: '0600'
+  when: syncthing_api_key.stdout | length > 0
+  notify: Restart docker containers
+  tags: docker
+
 - name: Deploy Docker .env file (secrets)
   template:
     src: templates/nsa/docker.env.j2

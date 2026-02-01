@@ -40,6 +40,7 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/sites:/usr/share/nginx/sites:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/syncthing-api-key.conf:/etc/nginx/syncthing-api-key.conf:ro
       - /home/richardbell/Sync/Home-Infrastructure/README.md:/usr/share/nginx/sites/docs/README.md:ro
     restart: unless-stopped
 

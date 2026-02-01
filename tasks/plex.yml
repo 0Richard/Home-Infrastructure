@@ -73,11 +73,11 @@
 - name: Configure Plex secure connections (Preferred for LAN)
   shell: |
     PREFS="/srv/docker/plex/config/Library/Application Support/Plex Media Server/Preferences.xml"
-    # secureConnections: 0=Preferred, 1=Required, 2=Disabled
+    # secureConnections: 0=Disabled, 1=Preferred, 2=Required
     if ! grep -q 'secureConnections=' "$PREFS"; then
-      sed -i 's|/>$| secureConnections="0"/>|' "$PREFS"
+      sed -i 's|/>$| secureConnections="1"/>|' "$PREFS"
     else
-      sed -i 's|secureConnections="[^"]*"|secureConnections="0"|' "$PREFS"
+      sed -i 's|secureConnections="[^"]*"|secureConnections="1"|' "$PREFS"
     fi
   when: plex_prefs.stat.exists
   register: plex_secure_config

@@ -95,6 +95,12 @@
     - import_tasks: tasks/moltbot.yml
       tags: [moltbot]
 
+    # =========================================================================
+    # HOME ASSISTANT (Configuration)
+    # =========================================================================
+    - import_tasks: tasks/homeassistant.yml
+      tags: [homeassistant, ha]
+
   # ===========================================================================
   # HANDLERS
   # ===========================================================================
@@ -139,6 +145,11 @@
       service:
         name: cockpit
         state: restarted
+
+    - name: Restart homeassistant container
+      command: docker compose restart homeassistant
+      args:
+        chdir: /srv/docker
 
     - name: Restart dnsmasq
       service:

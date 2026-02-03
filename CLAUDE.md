@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Personal infrastructure-as-code (Ansible) managing a home network with four devices:
 
-- **NSA** (`192.168.1.183`): Debian 13 home server running Docker containers (Pi-hole, Home Assistant, Plex, WireGuard, nginx, Mosquitto, Zigbee2MQTT, ntopng, Moltbot) + Cockpit web admin
+- **NSA** (`192.168.1.183`): Debian 13 home server running Docker containers (Pi-hole, Home Assistant, Plex, WireGuard, nginx, Mosquitto, Zigbee2MQTT, ntopng, Moltbot, Matter Server) + Cockpit web admin
 - **Mini** (`192.168.1.116`): Mac Mini M1 for Syncthing, iCloud backup, and Ollama LLM (Moltbot backend)
 - **MB4**: MacBook Pro M4 workstation with Syncthing and Docker (Colima) for local dev
 - **MKT** (`192.168.1.1`): MikroTik hAP ax³ router (PPPoE WAN, DHCP, firewall, WiFi)
@@ -35,7 +35,7 @@ ansible-playbook mb4.yml --tags docker   # Set up Colima + dev containers
 ansible-playbook mkt.yml --tags dhcp     # DHCP server config
 ansible-playbook mkt.yml --tags firewall # NAT and filter rules
 
-# Available tags: common, ssh, cockpit, avahi, docker, colima, ssl, https, nftables, pihole, wireguard, syncthing, backup, plex, moltbot, ollama, power, autologin, homebrew, icloud-backup, mackup, hosts, dns, identity, bridge, network, ip, pppoe, wan, dhcp, nat, filter, wifi, wireless, services, security, traffic-flow, monitoring
+# Available tags: common, ssh, cockpit, avahi, docker, colima, ssl, https, nftables, pihole, wireguard, syncthing, backup, plex, moltbot, ollama, homeassistant, ha, power, autologin, homebrew, icloud-backup, mackup, hosts, dns, identity, bridge, network, ip, pppoe, wan, dhcp, nat, filter, wifi, wireless, services, security, traffic-flow, monitoring
 
 # Vault operations
 ansible-vault view vault.yml
@@ -74,6 +74,7 @@ tasks/                      # Reusable task modules
 ├── ssl.yml                 # Self-signed cert for Moltbot HTTPS
 ├── moltbot.yml             # Moltbot AI assistant directories
 ├── ollama.yml              # Ollama LLM server (Mini)
+├── homeassistant.yml       # HA config deployment (configuration.yaml, secrets.yaml)
 └── mikrotik/               # MikroTik router tasks
     ├── identity.yml        # Router name
     ├── bridge.yml          # LAN bridge config
@@ -96,7 +97,9 @@ files/nsa/                  # Static config files deployed to NSA
 
 templates/nsa/              # Jinja2 templates
 ├── wg0.conf.j2             # WireGuard config (uses vault peers)
-└── docker.env.j2           # Docker environment vars
+├── docker.env.j2           # Docker environment vars
+├── ha-configuration.yaml.j2 # Home Assistant configuration.yaml
+└── ha-secrets.yaml.j2      # Home Assistant secrets.yaml
 
 group_vars/                 # Variables by group
 ├── linux_servers.yml       # Linux-specific (apt, systemd)
@@ -132,6 +135,7 @@ All browser services are accessible via nginx reverse proxy — no port numbers 
 | Hopo | http://hopo | Static site |
 | Docs | http://docs | README + service directory |
 | Mosquitto | - | Port 1883 (not browser) |
+| Matter Server | - | Port 5580 (localhost only, HA connects via WebSocket) |
 | WireGuard | - | Port 51820 (not browser) |
 
 **Note:** Short hostnames (e.g., `ha`, `pihole`) are resolved by Pi-hole DNS and work over both LAN and WireGuard VPN. `.local` variants (e.g., `ha.local`) use mDNS (Avahi) and only work on LAN.
@@ -184,6 +188,7 @@ Key variables in `vault.yml`:
 - `vault_mikrotik_wifi_ssid`, `vault_mikrotik_wifi_password` - WiFi config
 - `vault_mikrotik_guest_ssid`, `vault_mikrotik_guest_password` - Guest WiFi config
 - `vault_moltbot_token` - Moltbot API token
+- `vault_tapo_camera_user`, `vault_tapo_camera_password` - Tapo camera RTSP credentials
 - `vault_mini_login_password` - Mini macOS login password (for auto-login after reboot)
 
 ## Network
@@ -211,6 +216,8 @@ Key variables in `vault.yml`:
 
 | Issue | Resolution | Date |
 |-------|------------|------|
+| Matter server-side commissioning fails | Meross plugs only accept commissioning from phone proxy. Use HA Companion App instead of server-side `commission_with_code`. | 2026-02-02 |
+| matter-server `--primary-interface None` | Added `--primary-interface enp1s0` to docker-compose.yml command. Without it, CHIP SDK picks wrong/no interface. | 2026-02-02 |
 | Pi-hole DNS not working on Mac | Removed legacy `/etc/hosts` entries (10.0.0.1) that were overriding Pi-hole DNS. Pi-hole now handles local hostnames. | 2026-01-21 |
 | Network issues (browsers/NSA failing) | Removed duplicate `bridge-lan` - must use existing `bridge` (defconf). Set `bridge_name: bridge` in host_vars/mkt.yml. | 2026-01-20 |
 | Browsers not loading (curl works) | Added MSS clamping for PPPoE (MTU 1492). Without it, large TCP packets (TLS handshakes) fail silently. | 2026-01-20 |
@@ -219,6 +226,11 @@ Key variables in `vault.yml`:
 
 | Date | Test | Result |
 |------|------|--------|
+| 2026-02-02 | Tapo cameras (3x RTSP) | ✅ Pass - Kitchen, Bedroom, Office streams in HA |
+| 2026-02-02 | Matter smart plugs (4x) | ✅ Pass - Meross plugs via Companion App, multi-admin with Apple Home |
+| 2026-02-02 | Nanoleaf Thread bulb | ✅ Pass - Commissioned via Companion App, Thread mesh |
+| 2026-02-02 | Zigbee coordinator FW | ✅ Pass - Sonoff ZBDongle-P 20210708 → 20240710 |
+| 2026-02-02 | Matter Server | ✅ Pass - python-matter-server with --primary-interface enp1s0 |
 | 2026-01-29 | Comprehensive network test | ✅ Pass - 9/9 DNS, 3/3 SSH, 8/8 HTTP services, Ollama LAN access |
 | 2026-01-29 | Plex HTTPS requirement | ⚠️ Note - HTTP returns empty reply, HTTPS works (302). Updated bookmarks to `https://` |
 | 2026-01-29 | Ollama LAN access | ✅ Pass - `http://192.168.1.116:11434/` responds, qwen2.5:7b-16k active for Moltbot |

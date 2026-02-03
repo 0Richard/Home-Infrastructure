@@ -40,6 +40,22 @@ dhcp_static_leases:
     mac: "14:98:77:78:D6:46"
     ip: 192.168.1.116
     comment: "Mac Mini M1"
+  - name: tapo-kitchen
+    mac: "E4:FA:C4:B5:3E:86"
+    ip: 192.168.1.103
+    comment: "Tapo C210 Kitchen (A)"
+  - name: tapo-bedroom
+    mac: "E4:FA:C4:B5:4B:5E"
+    ip: 192.168.1.104
+    comment: "Tapo C210 Master Bedroom (B)"
+  - name: tapo-office
+    mac: "40:ED:00:36:A3:58"
+    ip: 192.168.1.102
+    comment: "Tapo TC70 Office (C)"
+  - name: aqara-doorbell
+    mac: "54:EF:44:5A:6C:15"
+    ip: 192.168.1.113
+    comment: "Aqara Doorbell"
 
 # PPPoE WAN (ether1)
 pppoe_interface: pppoe-plusnet

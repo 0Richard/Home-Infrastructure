@@ -1,0 +1,27 @@
+# =============================================================================
+# Home Assistant Tasks
+# =============================================================================
+# Deploy configuration.yaml and secrets.yaml from templates
+# Note: Cameras and Matter devices are managed via HA UI/API (stored in .storage/)
+# =============================================================================
+
+- name: Deploy Home Assistant configuration.yaml
+  template:
+    src: templates/nsa/ha-configuration.yaml.j2
+    dest: "{{ docker_data_path }}/homeassistant/configuration.yaml"
+    owner: root
+    group: docker
+    mode: '0644'
+  notify: Restart homeassistant container
+  tags: homeassistant
+
+- name: Deploy Home Assistant secrets.yaml
+  template:
+    src: templates/nsa/ha-secrets.yaml.j2
+    dest: "{{ docker_data_path }}/homeassistant/secrets.yaml"
+    owner: root
+    group: docker
+    mode: '0600'
+  notify: Restart homeassistant container
+  tags: homeassistant
+

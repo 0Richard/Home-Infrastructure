@@ -13,7 +13,7 @@ Personal infrastructure-as-code for home network devices.
 | **Mini** (Mac) | Backup hub + LLM | Syncthing, iCloud backup, Ollama |
 | **MB4** (Mac) | Workstation + LLM | Syncthing, Docker dev, LM Studio |
 
-**Three  Networks:** managed via Ansible:
+**Three Networks:** managed via Ansible:
 
 | Network | Subnet | Purpose |
 |---------|--------|---------|
@@ -68,14 +68,14 @@ Personal infrastructure-as-code for home network devices.
 |---|-------------|--------|-------|
 | 1 | SSH access from LAN | ✅ Done | Port 22, key-only auth |
 | 2 | SSH access from VPN | ✅ Done | Via WireGuard tunnel |
-| 3 | Docker containers running | ✅ Done | 8 containers: Pi-hole, Home Assistant, Plex, nginx, Mosquitto, Zigbee2MQTT, ntopng, Moltbot |
+| 3 | Docker containers running | ✅ Done | 10 containers: Pi-hole, Home Assistant, Plex, nginx, Mosquitto, Zigbee2MQTT, ntopng, Moltbot, Matter Server |
 | 4 | WireGuard VPN server | ✅ Done | Port 51820, 3 peers configured (MB4, Mini, iOS) |
 | 5 | Home Assistant accessible | ✅ Done | http://ha (via nginx proxy) |
 | 6 | Plex media server | ✅ Done | http://plex (via nginx proxy) |
 | 7 | Cockpit admin panel | ✅ Done | http://nsa (via nginx proxy) |
 | 8 | nginx reverse proxy | ✅ Done | Port 80/443, all services via hostname |
 | 9 | MQTT broker | ✅ Done | Port 1883 |
-| 10 | Zigbee2MQTT | ✅ Done | Sonoff dongle connected |
+| 10 | Zigbee2MQTT | ✅ Done | Sonoff ZBDongle-P, firmware 20240710 |
 | 11 | Firewall (nftables) | ✅ Done | Default deny, explicit allow |
 | 12 | Weekly Docker backup | ✅ Done | Sun 3am → Syncthing |
 | 13 | Pi-hole DNS (LAN) | ✅ Done | MikroTik pushes Pi-hole as DNS (2026-01-20) |
@@ -84,6 +84,10 @@ Personal infrastructure-as-code for home network devices.
 | 16 | Ad-blocking (VPN) | ✅ Done | Works when VPN active |
 | 17 | Local DNS names | ✅ Done | Pi-hole custom.list + /etc/hosts on Macs |
 | 18 | Moltbot AI assistant | ✅ Done | https://moltbot (via nginx HTTPS proxy), Ollama backend on Mini |
+| 19 | Tapo cameras (3x) | ✅ Done | Kitchen, Master Bedroom, Office — RTSP via generic camera integration |
+| 20 | Matter smart plugs (4x) | ✅ Done | Meross WiFi plugs — shared from Apple Home via Matter multi-admin |
+| 21 | Nanoleaf bulb | ✅ Done | Thread/Matter — shared from Apple Home via Companion App |
+| 22 | Matter Server | ✅ Done | python-matter-server container, `--primary-interface enp1s0` |
 
 ### Mini (Backup Hub)
 
@@ -119,7 +123,7 @@ Personal infrastructure-as-code for home network devices.
 | # | Requirement | Status | Notes |
 |---|-------------|--------|-------|
 | 1 | DHCP server | ✅ Done | Pool 192.168.1.100-200 |
-| 2 | DHCP reservations | ✅ Done | NSA, Mini static IPs |
+| 2 | DHCP reservations | ✅ Done | NSA, Mini, 3x Tapo cameras, Aqara doorbell |
 | 3 | Port forward 51820 | ✅ Done | WireGuard VPN |
 | 4 | DNS to Pi-hole | ✅ Done | Pi-hole primary, 1.1.1.1 fallback |
 | 5 | PPPoE (Plusnet) | ✅ Done | Replaced Plusnet Hub Two |
@@ -186,6 +190,10 @@ Personal infrastructure-as-code for home network devices.
 | NSA | 192.168.1.183 | 7c:83:34:b2:c1:33 |
 | Mini | 192.168.1.116 | 14:98:77:78:d6:46 |
 | Router | 192.168.1.1 | 04:f4:1c:d1:38:84 |
+| Tapo Kitchen (C210) | 192.168.1.103 | e4:fa:c4:b5:3e:86 |
+| Tapo Bedroom (C210) | 192.168.1.104 | e4:fa:c4:b5:4b:5e |
+| Tapo Office (TC70) | 192.168.1.102 | 40:ed:00:36:a3:58 |
+| Aqara Doorbell | 192.168.1.113 | 54:ef:44:5a:6c:15 |
 
 ### VPN Addresses (WireGuard)
 
@@ -202,7 +210,7 @@ All DNS queries go through Pi-hole for ad-blocking and local name resolution.
 
 **Local DNS Records (Pi-hole custom.list):**
 ```
-192.168.1.183  nsa ha pihole plex laya hopo docs moltbot
+192.168.1.183  nsa ha pihole plex laya hopo docs moltbot ntopng
 192.168.1.116  mini
 ```
 
@@ -232,7 +240,7 @@ Many public networks use 192.168.1.0/24 which conflicts with home LAN. Use VPN I
 
 ```bash
 # Add to /etc/hosts on Mac when remote
-sudo sh -c 'echo "10.0.0.1  laya hopo etc ha plex pihole nsa" >> /etc/hosts'
+sudo sh -c 'echo "10.0.0.1  laya hopo docs ha plex pihole nsa moltbot ntopng" >> /etc/hosts'
 ```
 
 | Service | URL |
@@ -352,6 +360,8 @@ ansible-vault rekey vault.yml
 | vault_mikrotik_wifi_ssid/password | Main WiFi |
 | vault_mikrotik_guest_ssid/password | Guest WiFi |
 | vault_moltbot_token | Moltbot API token |
+| vault_tapo_camera_user | Tapo camera RTSP username |
+| vault_tapo_camera_password | Tapo camera RTSP password |
 | vault_mini_login_password | Mini macOS login password (auto-login) |
 
 ## Testing
@@ -373,6 +383,11 @@ See `tests/README.md` for details.
 
 | Date | Test | Result | Notes |
 |------|------|--------|-------|
+| 2026-02-02 | Tapo cameras (3x) | ✅ Pass | RTSP streams in HA via generic camera integration |
+| 2026-02-02 | Matter smart plugs (4x) | ✅ Pass | Meross plugs commissioned via Companion App, multi-admin with Apple Home |
+| 2026-02-02 | Nanoleaf Thread bulb | ✅ Pass | Commissioned via Companion App, Thread mesh via Apple border router |
+| 2026-02-02 | Zigbee coordinator FW | ✅ Pass | Sonoff ZBDongle-P flashed 20210708 → 20240710 via Zigbee2MQTT OTA |
+| 2026-02-02 | Matter Server | ✅ Pass | python-matter-server with `--primary-interface enp1s0`, HA integration connected |
 | 2026-01-29 | Comprehensive LAN test | ✅ Pass | DNS (9/9), SSH (3/3), HTTP services (8/8), Ollama, MikroTik |
 | 2026-01-29 | Plex HTTPS requirement | ⚠️ Note | HTTP returns empty reply; HTTPS works. Bookmarks updated to `https://` |
 | 2026-01-29 | Ollama LAN access | ✅ Pass | `http://192.168.1.116:11434/` responds, qwen2.5:7b-16k active for Moltbot |
@@ -410,6 +425,7 @@ Before running Ansible, NSA needs:
 | 32400 | TCP | Plex | LAN + VPN |
 | 3000 | TCP | ntopng | LAN + VPN |
 | 18789 | TCP | Moltbot | LAN + VPN |
+| 5580 | TCP | Matter Server (WebSocket) | Localhost only (HA→matter-server) |
 | 51820 | UDP | WireGuard | Anywhere |
 
 ## File Locations

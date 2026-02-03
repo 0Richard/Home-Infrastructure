@@ -176,6 +176,25 @@ services:
       - CLAWDBOT_GATEWAY_TOKEN=${MOLTBOT_TOKEN:-}
     restart: unless-stopped
 
+  # ---------------------------------------------------------------------------
+  # Matter Server - Matter/Thread device controller
+  # WebSocket: ws://localhost:5580/ws
+  # Used by: Home Assistant Matter integration
+  # ---------------------------------------------------------------------------
+  matter-server:
+    container_name: matter-server
+    image: ghcr.io/home-assistant-libs/python-matter-server:stable
+    command: --storage-path /data --paa-root-cert-dir /data/credentials --primary-interface enp1s0
+    network_mode: host
+    security_opt:
+      - apparmor=unconfined
+    volumes:
+      - ./matter:/data
+      - /run/dbus:/run/dbus:ro
+    environment:
+      - TZ=Europe/London
+    restart: unless-stopped
+
   moltbot-cli:
     container_name: moltbot-cli
     image: ghcr.io/moltbot/clawdbot:main

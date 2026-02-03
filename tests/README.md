@@ -17,9 +17,10 @@ Comprehensive tests to verify infrastructure is working correctly.
 | Script | Run From | Purpose |
 |--------|----------|---------|
 | `quick-check.sh` | MB4 | Fast smoke test (~30s) |
-| `run-all.sh` | MB4 | Full suite orchestrator |
+| `run-all.sh` | MB4 | Full suite orchestrator (auto-logs to `results/`) |
 | `test-from-mb4.sh` | MB4 | Tests remote connectivity |
 | `test-nsa-local.sh` | NSA | Tests local services |
+| `test-mkt.sh` | MB4 | MikroTik router tests |
 
 ## What's Tested
 
@@ -31,7 +32,7 @@ Comprehensive tests to verify infrastructure is working correctly.
 | VPN | WireGuard interface, ping gateway |
 | DNS | Local hostnames (ha, laya, pihole, etc), external forwarding |
 | Services | Home Assistant, Pi-hole, Plex, nginx, Cockpit |
-| Ports | 22, 53, 80, 1883, 8080, 32400, 8123, 9090, 51820 |
+| Ports | 22, 53, 80, 443, 1883, 3000, 8081, 8123, 9090, 18789, 32400 |
 
 ### On NSA (`test-nsa-local.sh`)
 
@@ -46,7 +47,38 @@ Comprehensive tests to verify infrastructure is working correctly.
 | SSH | Hardening config, password auth disabled, keys |
 | Backups | Script exists, cron job, directories |
 | Syncthing | Service running, Sync folder |
+| GitHub Runner | Service installed, running, enabled, AWS CLI, Playwright deps |
 | DNS | dnsmasq stopped, Pi-hole resolving |
+
+### MikroTik Router (`test-mkt.sh`)
+
+| Category | Tests |
+|----------|-------|
+| Connectivity | Router reachable, SSH access |
+| Network | Bridge, LAN IP, PPPoE, internet |
+| DHCP | Server running, pool, DNS, static leases |
+| Firewall | NAT masquerade, port forwards, input rules |
+| WiFi | Main 2.4/5GHz, guest 2.4/5GHz, SSID |
+| Services | SSH enabled, telnet/winbox disabled |
+
+### Security Scanning (MB4, Docker/Colima)
+
+nmap and OpenVAS run on MB4 via Docker containers with the `security` profile.
+
+| Tool | Purpose | Command |
+|------|---------|---------|
+| nmap | Port/service scan | `docker compose --profile security run --rm nmap -sV 192.168.1.0/24` |
+| OpenVAS | Vulnerability scan | `docker compose --profile security up openvas` → `http://localhost:9392` |
+
+nmap runs automatically as Phase 4 of `run-all.sh` (skipped if Docker/Colima not running). OpenVAS is manual — first start takes 10-15 min to sync vulnerability feeds.
+
+## Test Logs
+
+| Log | Location | Notes |
+|-----|----------|-------|
+| Full suite | `results/YYYY-MM-DD_HHMMSS.log` | Auto-saved by `run-all.sh` |
+| nmap reports | `~/docker/nmap/reports/` | `nsa-YYYY-MM-DD.txt`, `mini-YYYY-MM-DD.txt` |
+| OpenVAS | `~/docker/openvas/data/` | Managed via web UI |
 
 ## Usage Examples
 
@@ -83,6 +115,7 @@ NSA_IP=192.168.1.100 ./tests/run-all.sh
 - `dig` - DNS testing
 - `ping` - Connectivity testing
 - `wg` - WireGuard CLI (optional, for VPN tests)
+- Docker/Colima (optional, for nmap scans in `run-all.sh`)
 
 **On NSA:**
 - Root access (for full test coverage)

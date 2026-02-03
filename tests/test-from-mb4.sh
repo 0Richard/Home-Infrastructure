@@ -108,7 +108,7 @@ test_dns() {
     section "DNS Resolution (Pi-hole at $NSA_IP)"
 
     # All local hostnames must resolve
-    local nsa_hosts=("ha" "pihole" "plex" "nsa" "laya" "hopo" "etc" "moltbot")
+    local nsa_hosts=("ha" "pihole" "plex" "nsa" "laya" "hopo" "docs" "moltbot")
 
     for hostname in "${nsa_hosts[@]}"; do
         if dig +short @$NSA_IP "$hostname" 2>/dev/null | grep -q "$NSA_IP"; then
@@ -153,11 +153,11 @@ test_services_ip() {
         fail "Home Assistant http://$NSA_IP:8123"
     fi
 
-    # Pi-hole Admin (HTTPS)
-    if curl -skL --connect-timeout 5 "https://$NSA_IP/admin/" | grep -qi "pi-hole" 2>/dev/null; then
-        pass "Pi-hole Admin https://$NSA_IP/admin"
+    # Pi-hole Admin (direct port 8081)
+    if curl -sL --connect-timeout 5 "http://$NSA_IP:8081/admin/" | grep -qi "pi-hole" 2>/dev/null; then
+        pass "Pi-hole Admin http://$NSA_IP:8081/admin"
     else
-        fail "Pi-hole Admin https://$NSA_IP/admin"
+        fail "Pi-hole Admin http://$NSA_IP:8081/admin"
     fi
 
     # Plex (HTTPS required)
@@ -174,11 +174,11 @@ test_services_ip() {
         fail "Cockpit https://$NSA_IP:9090"
     fi
 
-    # nginx
-    if curl -s --connect-timeout 5 -o /dev/null -w "%{http_code}" "http://$NSA_IP:8080" | grep -qE "200|404"; then
-        pass "nginx http://$NSA_IP:8080"
+    # nginx (port 80, default server returns 404)
+    if curl -s --connect-timeout 5 -o /dev/null -w "%{http_code}" "http://$NSA_IP" | grep -qE "200|404"; then
+        pass "nginx http://$NSA_IP:80"
     else
-        fail "nginx http://$NSA_IP:8080"
+        fail "nginx http://$NSA_IP:80"
     fi
 
     # ntopng
@@ -209,11 +209,11 @@ test_services_hostname() {
         fail "Home Assistant http://ha:8123"
     fi
 
-    # Pi-hole Admin
-    if curl -skL --connect-timeout 5 "https://pihole/admin/" | grep -qi "pi-hole" 2>/dev/null; then
-        pass "Pi-hole Admin https://pihole/admin"
+    # Pi-hole Admin (via nginx proxy on port 80)
+    if curl -sL --connect-timeout 5 "http://pihole/admin/" | grep -qi "pi-hole" 2>/dev/null; then
+        pass "Pi-hole Admin http://pihole/admin"
     else
-        fail "Pi-hole Admin https://pihole/admin"
+        fail "Pi-hole Admin http://pihole/admin"
     fi
 
     # Plex (HTTPS required)
@@ -230,17 +230,17 @@ test_services_hostname() {
         fail "Cockpit https://nsa:9090"
     fi
 
-    # nginx sites
-    if curl -s --connect-timeout 5 -o /dev/null -w "%{http_code}" "http://laya:8080" | grep -q "200"; then
-        pass "nginx http://laya:8080"
+    # nginx static sites (port 80)
+    if curl -s --connect-timeout 5 -o /dev/null -w "%{http_code}" "http://laya" | grep -q "200"; then
+        pass "nginx http://laya"
     else
-        fail "nginx http://laya:8080"
+        fail "nginx http://laya"
     fi
 
-    if curl -s --connect-timeout 5 -o /dev/null -w "%{http_code}" "http://hopo:8080" | grep -q "200"; then
-        pass "nginx http://hopo:8080"
+    if curl -s --connect-timeout 5 -o /dev/null -w "%{http_code}" "http://hopo" | grep -q "200"; then
+        pass "nginx http://hopo"
     else
-        fail "nginx http://hopo:8080"
+        fail "nginx http://hopo"
     fi
 
     # ntopng
@@ -288,11 +288,11 @@ test_ports() {
     local ports=(
         "22:SSH"
         "53:DNS"
-        "80:Pi-hole HTTP"
-        "443:Pi-hole HTTPS"
+        "80:nginx HTTP"
+        "443:nginx HTTPS (Moltbot)"
         "1883:MQTT"
         "3000:ntopng"
-        "8080:nginx"
+        "8081:Pi-hole Admin"
         "8123:HomeAssistant"
         "9090:Cockpit"
         "32400:Plex"
@@ -342,8 +342,8 @@ test_vpn_services() {
         fail "Home Assistant via VPN"
     fi
 
-    if curl -skL --connect-timeout 5 "https://$NSA_VPN_IP/admin/" | grep -qi "pi-hole" 2>/dev/null; then
-        pass "Pi-hole Admin via VPN (https://$NSA_VPN_IP/admin)"
+    if curl -sL --connect-timeout 5 "http://$NSA_VPN_IP:8081/admin/" | grep -qi "pi-hole" 2>/dev/null; then
+        pass "Pi-hole Admin via VPN (http://$NSA_VPN_IP:8081/admin)"
     else
         fail "Pi-hole Admin via VPN"
     fi

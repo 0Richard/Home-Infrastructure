@@ -25,6 +25,10 @@ docker_services:
   - moltbot-gateway
   - matter-server
 
+# Systemd services (non-Docker)
+systemd_services:
+  - actions.runner.Buckden-vb.nsa
+
 # DNS hostnames (configured in Pi-hole custom.list)
 dns_local_hosts:
   - { name: ha, ip: "{{ server_ip }}" }
@@ -47,6 +51,10 @@ tapo_cameras:
   - label: C
     name: Office
     ip: 192.168.1.102
+
+# GitHub Actions self-hosted runner
+github_runner_path: /home/richardbell/actions-runner
+github_runner_service: actions.runner.Buckden-vb.nsa
 
 # Media paths (requires 1TB SATA SSD at /mnt/data)
 media_path: /mnt/data/media

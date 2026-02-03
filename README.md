@@ -34,6 +34,7 @@ Personal infrastructure-as-code for home network devices.
 | Static sites | http://laya, http://hopo, http://docs |
 | SSH | ssh richardbell@nsa |
 | Syncthing | ~/Sync/ folder sync |
+| GitHub Actions | systemd service (self-hosted runner) |
 
 
 ---
@@ -88,6 +89,7 @@ Personal infrastructure-as-code for home network devices.
 | 20 | Matter smart plugs (4x) | ✅ Done | Meross WiFi plugs — shared from Apple Home via Matter multi-admin |
 | 21 | Nanoleaf bulb | ✅ Done | Thread/Matter — shared from Apple Home via Companion App |
 | 22 | Matter Server | ✅ Done | python-matter-server container, `--primary-interface enp1s0` |
+| 23 | GitHub Actions runner | ✅ Done | Self-hosted CI/CD, systemd service, Playwright + AWS CLI deps |
 
 ### Mini (Backup Hub)
 
@@ -115,8 +117,8 @@ Personal infrastructure-as-code for home network devices.
 | 7 | PostgreSQL container | ✅ Done | Port 5432, PostGIS 16 |
 | 8 | DynamoDB Local container | ✅ Done | Port 8000, AWS emulator |
 | 9 | k6 load testing | ✅ Done | On-demand (profiles: tools) |
-| 10 | OpenVAS vulnerability scanner | 📋 Planned | Security scanning |
-| 11 | nmap network scanner | 📋 Planned | Network reconnaissance |
+| 10 | OpenVAS vulnerability scanner | ✅ Done | Security scanning (profiles: security) |
+| 11 | nmap network scanner | ✅ Done | Network reconnaissance (profiles: security) |
 
 ### Router (MikroTik hAP ax³)
 
@@ -370,14 +372,33 @@ ansible-vault rekey vault.yml
 # Quick smoke test (~30 seconds)
 ./tests/quick-check.sh
 
-# Full test suite (~2-3 minutes)
+# Full test suite — MB4, NSA, MikroTik, nmap (auto-logged)
 ./tests/run-all.sh
 
 # MikroTik router tests only
 ./tests/test-mkt.sh
 ```
 
-See `tests/README.md` for details.
+### Security Scanning (MB4, Docker/Colima)
+
+```bash
+# nmap — port/service scan (auto-runs in full suite, or standalone)
+docker compose -f ~/docker/docker-compose.yml --profile security run --rm nmap -sV 192.168.1.0/24
+
+# OpenVAS — vulnerability scanner (manual, web UI)
+docker compose -f ~/docker/docker-compose.yml --profile security up -d openvas
+open http://localhost:9392   # Login: admin / admin
+```
+
+### Test Logs
+
+| Log | Location | Notes |
+|-----|----------|-------|
+| Full suite | `tests/results/YYYY-MM-DD_HHMMSS.log` | Auto-saved by `run-all.sh`, colors stripped |
+| nmap reports | `~/docker/nmap/reports/` | `nsa-YYYY-MM-DD.txt`, `mini-YYYY-MM-DD.txt` |
+| OpenVAS | `~/docker/openvas/data/` | Web UI managed, exportable as PDF/CSV |
+
+See `tests/README.md` for details or browse [http://docs/testing.html](http://docs/testing.html) on LAN.
 
 ### Manual Verification Log
 

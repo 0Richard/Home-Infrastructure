@@ -85,9 +85,9 @@ services:
 
   # ---------------------------------------------------------------------------
   # OpenVAS/Greenbone - Open-source vulnerability scanner
-  # Access: https://localhost:9392
+  # Access: http://localhost:9392
   # Default login: admin / admin (change on first login)
-  # Data: ./openvas/data/
+  # Data: Named volume (bind mount breaks PostgreSQL permissions on Colima)
   # Note: First start takes 10-15 min to sync vulnerability feeds
   # ---------------------------------------------------------------------------
   openvas:
@@ -98,7 +98,10 @@ services:
     environment:
       - PASSWORD=admin
     volumes:
-      - ./openvas/data:/data
+      - openvas-data:/data
     restart: unless-stopped
     profiles:
       - security
+
+volumes:
+  openvas-data:

@@ -33,6 +33,9 @@ local_*.yml
 *.retry
 .ansible/
 
+# Test result logs (auto-generated, keep .gitkeep)
+tests/results/*.log
+
 # Temporary files
 tmp/
 *.tmp

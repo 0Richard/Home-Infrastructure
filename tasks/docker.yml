@@ -133,6 +133,15 @@
     mode: '0644'
   notify: Restart docker containers
 
+- name: Deploy docs site testing.html
+  copy:
+    src: files/nsa/docs-site/testing.html
+    dest: "{{ docker_data_path }}/nginx/sites/docs/testing.html"
+    owner: root
+    group: docker
+    mode: '0644'
+  notify: Restart docker containers
+
 - name: Extract Syncthing API key for nginx proxy
   shell: grep -oP '(?<=<apikey>)[^<]+' /home/richardbell/.local/state/syncthing/config.xml
   register: syncthing_api_key

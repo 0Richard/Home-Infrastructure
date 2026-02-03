@@ -168,11 +168,11 @@ test_services_local() {
         fail "Home Assistant not responding on :8123"
     fi
 
-    # Pi-hole (v6 uses HTTPS on 443)
-    if curl -skL --connect-timeout 3 "https://localhost/admin/" | grep -qi "pi-hole"; then
-        pass "Pi-hole responding on :443"
+    # Pi-hole (v6 web UI on port 8081)
+    if curl -sL --connect-timeout 3 "http://localhost:8081/admin/" | grep -qi "pi-hole"; then
+        pass "Pi-hole responding on :8081"
     else
-        fail "Pi-hole not responding on :443"
+        fail "Pi-hole not responding on :8081"
     fi
 
     # Plex (HTTPS required)
@@ -182,11 +182,11 @@ test_services_local() {
         fail "Plex not responding on :32400 (HTTPS required)"
     fi
 
-    # nginx (on port 8080, port 80 is Pi-hole)
-    if curl -s --connect-timeout 3 -o /dev/null -w "%{http_code}" "http://localhost:8080" | grep -qE "200|404"; then
-        pass "nginx responding on :8080"
+    # nginx (port 80, default server returns 404)
+    if curl -s --connect-timeout 3 -o /dev/null -w "%{http_code}" "http://localhost:80" | grep -qE "200|404"; then
+        pass "nginx responding on :80"
     else
-        fail "nginx not responding on :8080"
+        fail "nginx not responding on :80"
     fi
 
     # ntopng
@@ -447,6 +447,55 @@ test_syncthing() {
 }
 
 # =============================================================================
+# GitHub Actions Runner Tests
+# =============================================================================
+test_github_runner() {
+    section "GitHub Actions Runner"
+
+    # Service installed
+    if [ -f /etc/systemd/system/actions.runner.Buckden-vb.nsa.service ]; then
+        pass "Runner systemd service file exists"
+    else
+        fail "Runner systemd service file missing"
+    fi
+
+    # Service running
+    if systemctl is-active --quiet actions.runner.Buckden-vb.nsa; then
+        pass "Runner service running"
+    else
+        fail "Runner service not running"
+    fi
+
+    # Service enabled on boot
+    if systemctl is-enabled --quiet actions.runner.Buckden-vb.nsa; then
+        pass "Runner service enabled on boot"
+    else
+        fail "Runner service not enabled on boot"
+    fi
+
+    # Runner directory exists
+    if [ -d /home/richardbell/actions-runner ]; then
+        pass "Runner directory exists"
+    else
+        fail "Runner directory missing"
+    fi
+
+    # AWS CLI installed
+    if command -v aws &>/dev/null; then
+        pass "AWS CLI installed ($(aws --version 2>&1 | awk '{print $1}'))"
+    else
+        fail "AWS CLI not installed"
+    fi
+
+    # Playwright deps (check key libraries)
+    if ldconfig -p 2>/dev/null | grep -q libnss3; then
+        pass "Playwright system deps installed (libnss3)"
+    else
+        fail "Playwright system deps missing (libnss3)"
+    fi
+}
+
+# =============================================================================
 # DNS Tests (Pi-hole)
 # =============================================================================
 test_dns_local() {
@@ -460,7 +509,7 @@ test_dns_local() {
     fi
 
     # All local hostnames must resolve
-    local nsa_hosts=("ha" "pihole" "plex" "nsa" "laya" "hopo" "etc" "moltbot")
+    local nsa_hosts=("ha" "pihole" "plex" "nsa" "laya" "hopo" "docs" "moltbot")
 
     for hostname in "${nsa_hosts[@]}"; do
         if dig +short @127.0.0.1 "$hostname" 2>/dev/null | grep -q "192.168.1.183"; then
@@ -510,6 +559,7 @@ main() {
     test_ssh_config
     test_backups
     test_syncthing
+    test_github_runner
     test_dns_local
 
     # Summary

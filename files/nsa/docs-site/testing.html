@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Testing - Home Infrastructure</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            line-height: 1.6; color: #c9d1d9; background: #0d1117;
+            max-width: 960px; margin: 0 auto; padding: 24px 16px;
+        }
+        a { color: #58a6ff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        h1 { color: #f0f6fc; margin-bottom: 8px; font-size: 1.8em; }
+        h1 + p { color: #8b949e; margin-bottom: 24px; }
+        h2 { color: #f0f6fc; font-size: 1.3em; margin: 32px 0 12px;
+            border-bottom: 1px solid #21262d; padding-bottom: 6px; }
+        h3 { color: #f0f6fc; font-size: 1.1em; margin: 20px 0 8px; }
+        p { margin: 8px 0; }
+        table { width: 100%; border-collapse: collapse; margin: 12px 0 24px; }
+        th { text-align: left; background: #161b22; color: #f0f6fc; }
+        th, td { padding: 8px 12px; border: 1px solid #21262d; }
+        tr:hover { background: #161b22; }
+        code { background: #161b22; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+        pre { background: #161b22; padding: 16px; border-radius: 6px;
+            overflow-x: auto; margin: 12px 0; }
+        pre code { background: none; padding: 0; }
+        .back { margin-bottom: 24px; font-size: 0.9em; }
+        .note { color: #8b949e; font-size: 0.9em; }
+        .tag { display: inline-block; font-size: 0.75em; padding: 2px 8px; border-radius: 12px;
+            font-weight: 600; vertical-align: middle; }
+        .tag.auto { background: #1f3a2a; color: #3fb950; }
+        .tag.manual { background: #3a2a1f; color: #d29922; }
+        .tag.logged { background: #1f2a3a; color: #58a6ff; }
+    </style>
+</head>
+<body>
+    <p class="back"><a href="/">&larr; Home</a></p>
+
+    <h1>Testing</h1>
+    <p>Infrastructure health checks, security scanning, and test logs</p>
+
+    <h2>Infrastructure Tests</h2>
+    <p>Bash test scripts that verify connectivity, services, DNS, firewall, and configuration.</p>
+
+    <table>
+        <thead>
+            <tr><th>Test</th><th>Purpose</th><th>Command</th><th>Run From</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Quick Check <span class="tag auto">auto</span></td>
+                <td>Smoke test &mdash; all services reachable via nginx proxy</td>
+                <td><code>./tests/quick-check.sh</code></td>
+                <td>MB4</td>
+            </tr>
+            <tr>
+                <td>Full Suite <span class="tag auto">auto</span> <span class="tag logged">logged</span></td>
+                <td>All phases: MB4, NSA, MikroTik, nmap</td>
+                <td><code>./tests/run-all.sh</code></td>
+                <td>MB4</td>
+            </tr>
+            <tr>
+                <td>MB4 Tests</td>
+                <td>North-south: SSH, DNS, HTTP services, ports, VPN access</td>
+                <td><code>./tests/test-from-mb4.sh</code></td>
+                <td>MB4</td>
+            </tr>
+            <tr>
+                <td>NSA Local</td>
+                <td>East-west: Docker containers, firewall, WireGuard, backups, Syncthing, GitHub runner</td>
+                <td><code>./tests/test-nsa-local.sh</code></td>
+                <td>NSA (via SSH)</td>
+            </tr>
+            <tr>
+                <td>MikroTik</td>
+                <td>Router: DHCP, firewall, NAT, WiFi, PPPoE, guest isolation</td>
+                <td><code>./tests/test-mkt.sh</code></td>
+                <td>MB4</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Security Scanning</h2>
+    <p>Network and vulnerability scanning tools running on MB4 via Docker (Colima). Both use the <code>security</code> profile.</p>
+
+    <table>
+        <thead>
+            <tr><th>Tool</th><th>Purpose</th><th>Command</th><th>Notes</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>nmap <span class="tag auto">auto</span></td>
+                <td>Port and service scan of LAN hosts. Verifies expected ports are open, detects unexpected services.</td>
+                <td><code>docker compose --profile security run --rm nmap -sV 192.168.1.0/24</code></td>
+                <td>Runs automatically in full suite (Phase 4). Reports saved to <code>~/docker/nmap/reports/</code></td>
+            </tr>
+            <tr>
+                <td>OpenVAS <span class="tag manual">manual</span></td>
+                <td>Vulnerability assessment. Scans for CVEs, misconfigurations, weak credentials.</td>
+                <td><code>docker compose --profile security up openvas</code></td>
+                <td>Web UI at <code>http://localhost:9392</code> (admin/admin). First start takes 10-15 min for feed sync.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>nmap Targeted Scans</h3>
+    <pre><code># Full LAN scan (all hosts, service detection)
+docker compose -f ~/docker/docker-compose.yml --profile security run --rm nmap -sV 192.168.1.0/24
+
+# NSA expected ports only
+docker compose -f ~/docker/docker-compose.yml --profile security run --rm \
+  nmap -sV -p 22,53,80,443,1883,3000,8081,8123,9090,18789,32400,51820 192.168.1.183
+
+# Mini (Ollama port)
+docker compose -f ~/docker/docker-compose.yml --profile security run --rm \
+  nmap -sV -p 11434 192.168.1.116
+
+# Router
+docker compose -f ~/docker/docker-compose.yml --profile security run --rm \
+  nmap -sV -p 22,53,80 192.168.1.1</code></pre>
+
+    <h3>OpenVAS Quick Start</h3>
+    <pre><code># Start OpenVAS (first run syncs vulnerability feeds)
+docker compose -f ~/docker/docker-compose.yml --profile security up -d openvas
+
+# Open web UI
+open http://localhost:9392
+# Login: admin / admin (change on first login)
+
+# Stop when done
+docker compose -f ~/docker/docker-compose.yml --profile security stop openvas</code></pre>
+
+    <h2>CI/CD Runner</h2>
+    <p>GitHub Actions self-hosted runner on NSA, managed as a systemd service.</p>
+
+    <table>
+        <thead>
+            <tr><th>Component</th><th>Detail</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Service</td>
+                <td><code>actions.runner.Buckden-vb.nsa</code> (systemd, enabled on boot)</td>
+            </tr>
+            <tr>
+                <td>Runner path</td>
+                <td><code>/home/richardbell/actions-runner</code></td>
+            </tr>
+            <tr>
+                <td>CI dependencies</td>
+                <td>Playwright Chromium system deps (19 packages), AWS CLI v2</td>
+            </tr>
+            <tr>
+                <td>Ansible deploy</td>
+                <td><code>ansible-playbook nsa.yml --tags github-runner</code></td>
+            </tr>
+            <tr>
+                <td>Network</td>
+                <td>Outbound HTTPS to GitHub (no inbound ports needed). Works on LAN and WireGuard VPN.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>Runner Management</h3>
+    <pre><code># Check status
+ssh root@nsa systemctl status actions.runner.Buckden-vb.nsa
+
+# View runner logs
+ssh root@nsa journalctl -u actions.runner.Buckden-vb.nsa -f
+
+# Restart runner
+ssh root@nsa systemctl restart actions.runner.Buckden-vb.nsa
+
+# Verify AWS CLI
+ssh nsa aws --version</code></pre>
+
+    <h2>Test Logs</h2>
+    <table>
+        <thead>
+            <tr><th>Log Type</th><th>Location</th><th>Format</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Full suite results <span class="tag logged">logged</span></td>
+                <td><code>tests/results/</code></td>
+                <td><code>YYYY-MM-DD_HHMMSS.log</code> (auto-saved by run-all.sh, colors stripped)</td>
+            </tr>
+            <tr>
+                <td>nmap reports <span class="tag logged">logged</span></td>
+                <td><code>~/docker/nmap/reports/</code></td>
+                <td><code>nsa-YYYY-MM-DD.txt</code>, <code>mini-YYYY-MM-DD.txt</code></td>
+            </tr>
+            <tr>
+                <td>OpenVAS reports</td>
+                <td><code>~/docker/openvas/data/</code></td>
+                <td>Managed via OpenVAS web UI, exportable as PDF/CSV</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p class="note">Full suite logs are git-ignored. nmap and OpenVAS data persists in Docker volumes on MB4.</p>
+</body>
+</html>

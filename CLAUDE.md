@@ -34,8 +34,9 @@ ansible-playbook mb4.yml --tags hosts    # Update /etc/hosts entries
 ansible-playbook mb4.yml --tags docker   # Set up Colima + dev containers
 ansible-playbook mkt.yml --tags dhcp     # DHCP server config
 ansible-playbook mkt.yml --tags firewall # NAT and filter rules
+ansible-playbook nsa.yml --tags github-runner  # CI/CD runner + deps
 
-# Available tags: common, ssh, cockpit, avahi, docker, colima, ssl, https, nftables, pihole, wireguard, syncthing, backup, plex, moltbot, ollama, homeassistant, ha, power, autologin, homebrew, icloud-backup, mackup, hosts, dns, identity, bridge, network, ip, pppoe, wan, dhcp, nat, filter, wifi, wireless, services, security, traffic-flow, monitoring
+# Available tags: common, ssh, cockpit, avahi, docker, colima, ssl, https, nftables, pihole, wireguard, syncthing, backup, plex, moltbot, ollama, homeassistant, ha, github-runner, ci, power, autologin, homebrew, icloud-backup, mackup, hosts, dns, identity, bridge, network, ip, pppoe, wan, dhcp, nat, filter, wifi, wireless, services, security, traffic-flow, monitoring
 
 # Vault operations
 ansible-vault view vault.yml
@@ -43,7 +44,16 @@ ansible-vault edit vault.yml
 
 # Testing
 ./tests/quick-check.sh             # Fast smoke test
-./tests/run-all.sh                 # Full test suite
+./tests/run-all.sh                 # Full test suite (auto-logs to tests/results/)
+
+# Security scanning (MB4, Docker/Colima required)
+docker compose -f ~/docker/docker-compose.yml --profile security run --rm nmap -sV 192.168.1.0/24
+docker compose -f ~/docker/docker-compose.yml --profile security up openvas  # http://localhost:9392
+
+# Test logs
+# tests/results/                   # Auto-saved by run-all.sh
+# ~/docker/nmap/reports/           # nmap scan reports
+# ~/docker/openvas/data/           # OpenVAS data (web UI managed)
 ```
 
 ## Architecture
@@ -75,6 +85,7 @@ tasks/                      # Reusable task modules
 ├── moltbot.yml             # Moltbot AI assistant directories
 ├── ollama.yml              # Ollama LLM server (Mini)
 ├── homeassistant.yml       # HA config deployment (configuration.yaml, secrets.yaml)
+├── github-runner.yml       # GitHub Actions self-hosted runner + CI deps
 └── mikrotik/               # MikroTik router tasks
     ├── identity.yml        # Router name
     ├── bridge.yml          # LAN bridge config
@@ -137,6 +148,7 @@ All browser services are accessible via nginx reverse proxy — no port numbers 
 | Mosquitto | - | Port 1883 (not browser) |
 | Matter Server | - | Port 5580 (localhost only, HA connects via WebSocket) |
 | WireGuard | - | Port 51820 (not browser) |
+| GitHub Actions | - | Self-hosted runner, systemd service `actions.runner.Buckden-vb.nsa` |
 
 **Note:** Short hostnames (e.g., `ha`, `pihole`) are resolved by Pi-hole DNS and work over both LAN and WireGuard VPN. `.local` variants (e.g., `ha.local`) use mDNS (Avahi) and only work on LAN.
 
@@ -226,6 +238,7 @@ Key variables in `vault.yml`:
 
 | Date | Test | Result |
 |------|------|--------|
+| 2026-02-03 | Full test suite (run-all.sh) | ✅ Pass - Quick: 11/11, MikroTik: 25/25. Fixed stale tests (etc→docs, nginx 8080→80, Pi-hole 443→8081) |
 | 2026-02-02 | Tapo cameras (3x RTSP) | ✅ Pass - Kitchen, Bedroom, Office streams in HA |
 | 2026-02-02 | Matter smart plugs (4x) | ✅ Pass - Meross plugs via Companion App, multi-admin with Apple Home |
 | 2026-02-02 | Nanoleaf Thread bulb | ✅ Pass - Commissioned via Companion App, Thread mesh |
